@@ -1,0 +1,5 @@
+server:
+  port: 7005
+spring:
+  application:
+    name: qwert-guangfa
