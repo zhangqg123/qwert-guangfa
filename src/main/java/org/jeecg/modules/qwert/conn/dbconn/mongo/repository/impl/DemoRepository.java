@@ -52,7 +52,7 @@ public class DemoRepository {
     public void insertAlarm(Alarm alarm) {
         mongoTemplate.insert(alarm);
     }
-    public void insertAudit(Audit audit) {
+    synchronized public void insertAudit(Audit audit) {
         mongoTemplate.insert(audit);
     }
 

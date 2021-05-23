@@ -1,48 +1,13 @@
 package org.jeecg.modules.qwert.jst.service.impl;
 
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
-import javax.annotation.Resource;
-import javax.jms.Connection;
-import javax.jms.DeliveryMode;
-import javax.jms.Destination;
-import javax.jms.JMSException;
-import javax.jms.MessageProducer;
-import javax.jms.Session;
-import javax.jms.TextMessage;
-
-import org.fusesource.stomp.jms.StompJmsConnectionFactory;
-import org.fusesource.stomp.jms.StompJmsDestination;
-import org.jeecg.modules.qwert.conn.modbus4j.test.TestSerialPortWrapper;
-import org.jeecg.modules.qwert.conn.snmp.SnmpData;
-import org.jeecg.modules.qwert.conn.dbconn.mongo.common.model.Alarm;
-import org.jeecg.modules.qwert.conn.dbconn.mongo.common.model.Audit;
-import org.jeecg.modules.qwert.conn.dbconn.mongo.repository.impl.DemoRepository;
-import org.jeecg.modules.qwert.jst.entity.JstZcAlarm;
-import org.jeecg.modules.qwert.jst.entity.JstZcCat;
-import org.jeecg.modules.qwert.jst.entity.JstZcConfig;
-import org.jeecg.modules.qwert.jst.entity.JstZcDev;
-import org.jeecg.modules.qwert.jst.entity.JstZcTarget;
-import org.jeecg.modules.qwert.jst.mapper.JstZcDevMapper;
-import org.jeecg.modules.qwert.jst.service.IJstZcAlarmService;
-import org.jeecg.modules.qwert.jst.service.IJstZcCatService;
-import org.jeecg.modules.qwert.jst.service.IJstZcConfigService;
-import org.jeecg.modules.qwert.jst.service.IJstZcDevService;
-import org.jeecg.modules.qwert.jst.service.IJstZcTargetService;
-import org.jeecg.modules.qwert.jst.utils.JstConstant;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import org.fusesource.stomp.jms.StompJmsConnectionFactory;
+import org.fusesource.stomp.jms.StompJmsDestination;
+import org.jeecg.modules.qwert.conn.dbconn.mongo.common.model.Alarm;
+import org.jeecg.modules.qwert.conn.dbconn.mongo.common.model.Audit;
+import org.jeecg.modules.qwert.conn.dbconn.mongo.repository.impl.DemoRepository;
 import org.jeecg.modules.qwert.conn.modbus4j.source.BatchRead;
 import org.jeecg.modules.qwert.conn.modbus4j.source.BatchResults;
 import org.jeecg.modules.qwert.conn.modbus4j.source.ModbusFactory;
@@ -52,6 +17,19 @@ import org.jeecg.modules.qwert.conn.modbus4j.source.exception.ModbusInitExceptio
 import org.jeecg.modules.qwert.conn.modbus4j.source.exception.ModbusTransportException;
 import org.jeecg.modules.qwert.conn.modbus4j.source.ip.IpParameters;
 import org.jeecg.modules.qwert.conn.modbus4j.source.locator.BaseLocator;
+import org.jeecg.modules.qwert.conn.modbus4j.test.TestSerialPortWrapper;
+import org.jeecg.modules.qwert.conn.snmp.SnmpData;
+import org.jeecg.modules.qwert.jst.entity.*;
+import org.jeecg.modules.qwert.jst.mapper.JstZcDevMapper;
+import org.jeecg.modules.qwert.jst.service.*;
+import org.jeecg.modules.qwert.jst.utils.JstConstant;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import javax.annotation.Resource;
+import javax.jms.*;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @Description: jst_zc_dev
@@ -60,7 +38,7 @@ import org.jeecg.modules.qwert.conn.modbus4j.source.locator.BaseLocator;
  * @Version: V1.0
  */
 @Service
-public class JstZcDevServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> implements IJstZcDevService {
+public class JstZcJobServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> implements IJstZcJobService {
 	@Autowired
 	private IJstZcCatService jstZcCatService;
 	@Resource
@@ -78,190 +56,74 @@ public class JstZcDevServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
     private List<JstZcDev> jzdList;    
     private List<JstZcTarget> jztList;
     
-//	@Cacheable(value = CacheConstant.JST_DEV_CACHE)
-	@Override
-	public List<JstZcDev> queryJzdList() {
-//		QueryWrapper<JstZcDev> dqw = QueryGenerator.initQueryWrapper(new JstZcDev(), null);
-//		dqw.eq("status", "0");
-//		dqw.orderByAsc("dev_no");
-		List<JstZcDev> jzdList = this.jstZcDevMapper.queryJzdList();
-		return jzdList;
-	}
-	@Override
 	public List<JstZcDev> queryJzdList2(String catNo) {
 		List<JstZcDev> jzdList = this.jstZcDevMapper.queryJzdList2(catNo);
 		return jzdList;
 	}
 	
-	@Override
-	public String handleRead(String catNo) {
-		boolean allflag = true;
-//		JstConstant.runflag=true;
-		if(catNo.equals("all") && JstConstant.runflag==true) {
-			JstConstant.runall=true;
-		}
-		List<JstZcConfig> jzConList = jstZcConfigService.list();
-		
-		for (int i=0;i<jzConList.size();i++) {
-			JstZcConfig jc = jzConList.get(i);
-			if(jc.getConfigNo().equals("debugflag")) {
-				JstConstant.debugflag=Integer.parseInt(jc.getConfigValue());
-			}
-			if(jc.getConfigNo().equals("sleeptime")) {
-				JstConstant.sleeptime=Integer.parseInt(jc.getConfigValue());
-			}
-			if(jc.getConfigNo().equals("poweroff")) {
-				JstConstant.poweroff=Integer.parseInt(jc.getConfigValue());
-			}
-			if(jc.getConfigNo().equals("activeMQ")) {
-				JstConstant.activeMQ=Integer.parseInt(jc.getConfigValue());
-			}
-		}
-
-		jzcList = jstZcCatService.queryJzcList();
-        MyThread mt=new MyThread(allflag,catNo);
-		Thread th = new Thread(mt);
-		th.setPriority(8);
-		th.start();
-		return null;
-	}
-	
-	public void threadWork(boolean allflag, String catNo) throws JMSException {
-		if(catNo==null||catNo=="") {
-			return;
-		}
-		Session session=null;
-		Connection connection=null;
-		if(JstConstant.activeMQ==1) {
-			StompJmsConnectionFactory factory = new StompJmsConnectionFactory();
-			factory.setBrokerURI("tcp://" + JstConstant.host + ":" + JstConstant.port);
-
-
-			connection = factory.createConnection(JstConstant.user, JstConstant.password);
-			connection.start();
-			session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-		}
-        List<JstZcCat> jzcCollect = null;
-		int readCount=0;
-		while(allflag&&JstConstant.runflag) {
-			long start, end;
-			start = System.currentTimeMillis();
-			readCount++;
-			if(!catNo.equals("all")) {
-				allflag=false;
-		        jzcCollect = jzcList.stream().filter(u -> catNo.equals(u.getOriginId())).collect(Collectors.toList());
-			}else {
-				jzcCollect=jzcList;
-			}
-			for (int i = 0; i < jzcCollect.size(); i++) {
-				if(!JstConstant.runflag) {
-					break;
-				}
-				JstZcCat jstZcCat = jzcCollect.get(i);
-				if(jstZcCat.getOriginId().equals("jiguilietoufenlu")) {
-					if(readCount%3!=0) {
-						System.out.println("readCount="+readCount+"::跳过列头柜");
-						continue;
-					}
-				}
-				JstConstant.devcat=jstZcCat.getZcCatname();
-//		        List<JstZcDev> jzdCollect = jzdList.stream().filter(u -> jstZcCat.getOriginId().equals(u.getDevCat())).collect(Collectors.toList());
-				List<JstZcDev> jzdCollect = queryJzdList2(jstZcCat.getOriginId());
-//				List<JstZcTarget> jztCollect = jztList.stream().filter(u -> jstZcCat.getOriginId().equals(u.getDevType())).collect(Collectors.toList());
-
-				try {
-					targetRead(jzdCollect,session);
-					Thread.sleep(500);
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			}
-			end = System.currentTimeMillis();
-			System.out.println(catNo+" 开始时间:" + start + "; 结束时间:" + end + "; 用时:" + (end - start) + "(ms)");
-		}
-		JstConstant.runflag=false;
-		if(JstConstant.activeMQ==1) {
-			connection.close();
-		}
-	}
 
 	/**
-	 * 测试
+	 * 扫描分类
 	 * 
 	 * @return
 	 * @throws JMSException 
 	 */
-
-	public void targetRead(List<JstZcDev> jzdCollect,Session session) throws JMSException {
-		MessageProducer producer = null;
-		MessageProducer producer2=null;
-		MessageProducer producer9=null;
-		if(JstConstant.activeMQ==1) {
-			Destination dest = new StompJmsDestination(JstConstant.destination);
-			Destination dest2 = new StompJmsDestination(JstConstant.destination2);
-			Destination dest9 = new StompJmsDestination(JstConstant.destination9);
-			producer = session.createProducer(dest);
-			producer2 = session.createProducer(dest2);
-			producer9 = session.createProducer(dest9);
-			producer.setDeliveryMode(DeliveryMode.NON_PERSISTENT);
-			producer2.setDeliveryMode(DeliveryMode.NON_PERSISTENT);
-			producer9.setDeliveryMode(DeliveryMode.NON_PERSISTENT);
-		}
+	@Override
+	public void readCat(String catOrigin) {
+		long start, end;
+		start = System.currentTimeMillis();
+		List<JstZcDev> jzdCollect = queryJzdList2(catOrigin);
 		for (int i = 0; i < jzdCollect.size(); i++) {
 			if(!JstConstant.runflag) {
 				break;
 			}
-			List resList = new ArrayList();
-			JstZcDev jzd = jzdCollect.get(i);
-			String devNo=jzd.getDevNo();
-			String devName=jzd.getDevName();
-			String catNo = jzd.getDevCat();
-			String modNo=jzd.getModNo();
-			if(modNo==null||modNo.equals("")) {
-				modNo="blank";
-			}
-			String conInfo = jzd.getConInfo();
-//			System.out.println(conInfo);
-			JSONObject jsonConInfo = JSON.parseObject(conInfo);
-			String ipAddress = jsonConInfo.getString("ipAddress");
-			String port = jsonConInfo.getString("port");
-			String type = jsonConInfo.getString("type");
-			String stime = jsonConInfo.getString("sleeptime");
-			int sleeptime=JstConstant.sleeptime;
-			if(stime!=null && !stime.equals("")) {
-				sleeptime=Integer.parseInt(stime);
-			}
-//			String slave = null;
-//			String packageBit = null;
-
-			String version = null;
-//			String timeOut = null;
-			String community = null;
-
-			BatchResults<String> results = null;
-			List<JstZcTarget> jztCollect = jstZcTargetService.queryJztList4(catNo);
-
-			if (type.equals("SOCKET")||type.equals("MODBUSRTU")||type.equals("MODBUSASCII")||type.equals("MODBUSTCP")) {
-				handleModus(type,session, producer, producer2, producer9, resList, devNo, devName, catNo, jsonConInfo, sleeptime,
-						jztCollect);
-			}
-
-			if (type.equals("SNMP")) {
-				handleSnmp(type,session, producer, producer2, producer9, resList, modNo,devNo, devName, catNo, jsonConInfo, ipAddress, jztCollect);
-			}
-
-//			try {y
-//				Thread.sleep(sleeptime);
-//			} catch (Exception e) {
-//			      e.printStackTrace();
-//			}
+			JstZcDev dev = jzdCollect.get(i);
+			readDev(dev.getId());
 		}
-		
-	//	return Result.ok("巡检结束");
+		end = System.currentTimeMillis();
+		System.out.println(catOrigin+" 开始时间:" + start + "; 结束时间:" + end + "; 用时:" + (end - start) + "(ms)");
 	}
 
-	private void handleSnmp(String type,Session session, MessageProducer producer, MessageProducer producer2, MessageProducer producer9, List resList, String modNo,String devNo, String devName, String catNo, JSONObject jsonConInfo, String ipAddress, List<JstZcTarget> jztCollect) throws JMSException {
+	@Override
+	public void readDev(String devId) {
+		List resList = new ArrayList();
+		JstZcDev jzd = getById(devId);
+		String devNo=jzd.getDevNo();
+		String devName=jzd.getDevName();
+		String catNo = jzd.getDevCat();
+		String modNo=jzd.getModNo();
+		if(modNo==null||modNo.equals("")) {
+			modNo="blank";
+		}
+		String conInfo = jzd.getConInfo();
+//			System.out.println(conInfo);
+		JSONObject jsonConInfo = JSON.parseObject(conInfo);
+		String ipAddress = jsonConInfo.getString("ipAddress");
+		String port = jsonConInfo.getString("port");
+		String type = jsonConInfo.getString("type");
+		String stime = jsonConInfo.getString("sleeptime");
+		int sleeptime= JstConstant.sleeptime;
+		if(stime!=null && !stime.equals("")) {
+			sleeptime=Integer.parseInt(stime);
+		}
+
+		String version = null;
+		String community = null;
+
+		BatchResults<String> results = null;
+		List<JstZcTarget> jztCollect = jstZcTargetService.queryJztList4(catNo);
+
+		if (type.equals("SOCKET")||type.equals("MODBUSRTU")||type.equals("MODBUSASCII")||type.equals("MODBUSTCP")) {
+			handleModus(type, resList, devNo, devName, catNo, jsonConInfo, sleeptime,
+					jztCollect);
+		}
+
+		if (type.equals("SNMP")) {
+			handleSnmp(type, resList, modNo,devNo, devName, catNo, jsonConInfo, ipAddress, jztCollect);
+		}
+	}
+
+	private void handleSnmp(String type,List resList, String modNo,String devNo, String devName, String catNo, JSONObject jsonConInfo, String ipAddress, List<JstZcTarget> jztCollect)  {
 		String version;
 		String community;
 		version = jsonConInfo.getString("version");
@@ -309,11 +171,6 @@ public class JstZcDevServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
 												dealflag=1; //未处理
 												jza.setSendTime(new Date());
 												jstZcAlarmService.updateSys(jza);
-												if(JstConstant.activeMQ==1) {
-													String sendMessage = "[{" + "devNo:\"" + devNo + "\"," + "devName:\"" + devName + "\"," + "targetNo:\"" + jza.getTargetNo() + "\"," + "alarmValue:\"" + jza.getAlarmValue() + "\"" + "}]";
-													TextMessage msg = session.createTextMessage(sendMessage);
-													producer9.send(msg);
-												}
 											}
 											break;
 										}
@@ -328,11 +185,6 @@ public class JstZcDevServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
 										jstZcAlarm.setSendTime(new Date());
 										jstZcAlarm.setSendType("2");
 										jstZcAlarmService.saveSys(jstZcAlarm);
-										if(JstConstant.activeMQ==1) {
-											String sendMessage = "[{" + "devNo:\"" + devNo + "\"," + "devName:\"" + devName + "\"," + "targetNo:\"" + jzt.getTargetNo() + "\"," + "alarmValue:\"" + jzt.getTargetName() + "\"" + "}]";
-											TextMessage msg = session.createTextMessage(sendMessage);
-											producer9.send(msg);
-										}
 									}
 								}
 							}
@@ -344,32 +196,21 @@ public class JstZcDevServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
 			}else {
 				break;
 			}
-			handelDbMq(type,session, producer, producer2, resList, devNo);
+			handelDbMq(type, resList, devNo);
 		}
 	}
 
-	private void handelDbMq(String type,Session session, MessageProducer producer, MessageProducer producer2, List resList, String devNo) throws JMSException {
+	private void handelDbMq(String type, List resList, String devNo) {
 		String resValue = org.apache.commons.lang.StringUtils.join(resList.toArray(),";");
 		Audit audit = new Audit();
 		audit.setDevNo(devNo);
 		audit.setAuditValue(resValue);
 		audit.setAuditTime(new Date());
 		repository.insertAudit(audit);
-		if(JstConstant.activeMQ==1){
-			String messageBody = "\""+audit.getAuditValue()+"\"";
-			String sendMessage = "[{"+"devNo:\""+devNo+"\","+"message:"+messageBody+"}]";
-			TextMessage msg = session.createTextMessage(sendMessage);
-			if (type.equals("SOCKET")) {
-				producer.send(msg);
-			}
-			if (type.equals("SNMP")) {
-				producer2.send(msg);
-			}
-		}
 	}
 
-	public void handleModus(String type, Session session, MessageProducer producer, MessageProducer producer2, MessageProducer producer9, List resList, String devNo,
-							String devName, String catNo, JSONObject jsonConInfo, int sleeptime, List<JstZcTarget> jztCollect) throws JMSException {
+	private void handleModus(String type, List resList, String devNo,
+							String devName, String catNo, JSONObject jsonConInfo, int sleeptime, List<JstZcTarget> jztCollect)  {
 		BatchResults<String> results;
 		String slave = jsonConInfo.getString("slave");
 		String packageBit = jsonConInfo.getString("packageBit");
@@ -564,11 +405,6 @@ public class JstZcDevServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
 									dealflag=1; //未处理
 									jza.setSendTime(new Date());
 									jstZcAlarmService.updateSys(jza);
-									if(JstConstant.activeMQ==1) {
-										String sendMessage = "[{"+"devNo:\""+devNo+"\","+"devName:\""+devName+"\","+"targetNo:\""+alarmNo+"\","+"alarmValue:\""+alarmValue+"\""+"}]";
-										TextMessage msg = session.createTextMessage(sendMessage);
-										producer9.send(msg);
-									}
 								}
 								break;
 							}
@@ -583,11 +419,6 @@ public class JstZcDevServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
 							jstZcAlarm.setSendTime(new Date());
 							jstZcAlarm.setSendType("2");
 							jstZcAlarmService.saveSys(jstZcAlarm);
-							if(JstConstant.activeMQ==1) {
-								String sendMessage = "[{"+"devNo:\""+devNo+"\","+"devName:\""+devName+"\","+"targetNo:\""+alarmNo+"\","+"alarmValue:\""+alarmValue+"\""+"}]";
-								TextMessage msg = session.createTextMessage(sendMessage);
-								producer9.send(msg);
-							}
 						}
 					}else {
 						List<JstZcAlarm> jzaList = jstZcAlarmService.queryJzaList("1");
@@ -627,10 +458,10 @@ public class JstZcDevServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
 		} finally {
 			master.destroy();
 		}
-		handelDbMq(type,session, producer, producer2, resList, devNo);
+		handelDbMq(type, resList, devNo);
 	}
 
-	public String trackAlarm(List resList, List<JstZcTarget> jztCollect) {
+	private String trackAlarm(List resList, List<JstZcTarget> jztCollect) {
 		String alarmValue="";
 		String alarmNo="";
 
@@ -805,40 +636,6 @@ public class JstZcDevServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
 			alarm=alarmNo+"::"+alarmValue;
 		}
 		return alarm;
-	}
-	
-	class MyThread implements Runnable {
-		private boolean allflag;
-		private String catNo;
-		
-		public MyThread(boolean allflag, String catNo) {
-			this.allflag = allflag;
-			this.catNo = catNo;
-		}
-
-		@Override
-		public void run() {
-			try {
-				long start, end;
-				start = System.currentTimeMillis();
-				threadWork(this.allflag,this.catNo);
-				end = System.currentTimeMillis();
-				System.out.println("开始时间:" + start + "; 结束时间:" + end + "; 用时:" + (end - start) + "(ms)");
-				Thread.sleep(500);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			} catch (JMSException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}
-
-	}
-
-	@Override
-	public List<JstZcDev> queryJmacList() {
-		List<JstZcDev> jmacList = this.jstZcDevMapper.queryJmacList();
-		return jmacList;
 	}
 
 }
