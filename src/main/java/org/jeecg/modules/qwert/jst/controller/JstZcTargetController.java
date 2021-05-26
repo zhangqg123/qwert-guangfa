@@ -66,6 +66,9 @@ public class JstZcTargetController extends JeecgController<JstZcTarget, IJstZcTa
 								   @RequestParam(name="pageNo", defaultValue="1") Integer pageNo,
 								   @RequestParam(name="pageSize", defaultValue="10") Integer pageSize,
 								   HttpServletRequest req) {
+		if(jstZcTarget.getDevNo()!=null && jstZcTarget.getDevNo().indexOf("gf")==-1){
+			jstZcTarget.setDevNo(null);
+		}
 		QueryWrapper<JstZcTarget> queryWrapper = QueryGenerator.initQueryWrapper(jstZcTarget, req.getParameterMap());
 		queryWrapper.orderByAsc("dev_type");
 		queryWrapper.orderByAsc("instruct");

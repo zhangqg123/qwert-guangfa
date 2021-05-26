@@ -162,7 +162,11 @@ public class JstZcDevController extends JeecgController<JstZcDev, IJstZcDevServi
 		List<JstZcTarget> jztList = null;
 		List resList = new ArrayList();
 		if (jstZcRev.getDevType() != null) {
-			jztList = jstZcTargetService.queryJztList4(jstZcRev.getDevType());
+			if(devNo.indexOf("gf")!=-1){
+				jztList = jstZcTargetService.queryJztList5(devNo);
+			}else {
+				jztList = jstZcTargetService.queryJztList4(jstZcRev.getDevType());
+			}
 		} else {
 			jztList = JSONArray.parseArray(revList, JstZcTarget.class);
 		}
@@ -277,8 +281,19 @@ public class JstZcDevController extends JeecgController<JstZcDev, IJstZcDevServi
 			for (int i = 0; i < jztList.size(); i++) {
 				JstZcTarget jzt = jztList.get(i);
 				String di = jzt.getInstruct().substring(0,2);
-				
-				int	offset = Integer.parseInt(jzt.getAddress());
+				int offset=0;
+				String ta = jzt.getAddress();
+				String[] tas=null;
+				if(ta!=null&&ta.indexOf(".")!=-1){
+					tas = ta.split("\\.");
+					ta=tas[0];
+				}
+				if(jzt.getAddressType()!=null && jzt.getAddressType().equals("HEX")){
+					offset = Integer.parseInt(ta,16);
+				}else{
+					offset = Integer.parseInt(ta);
+				}
+
 				if (offset==tmp2Offset&&pointNumber>0) {
 					continue;
 				}
@@ -301,16 +316,19 @@ public class JstZcDevController extends JeecgController<JstZcDev, IJstZcDevServi
 					flag = false;
 					pointNumber = 0;
 				}
-				
 
+				String dataType = "2";
+				if(jzt.getDataType()!=null){
+					dataType=jzt.getDataType();
+				}
 				if (di.equals("04")) {
 						batch.addLocator(jzt.getId(),
-								BaseLocator.inputRegister(slaveId, offset, Integer.parseInt(jzt.getDataType())));
+								BaseLocator.inputRegister(slaveId, offset, Integer.parseInt(dataType)));
 						batchSend = true;
 				}
 				if (di.equals("03")) {
 						batch.addLocator(jzt.getId(),
-								BaseLocator.holdingRegister(slaveId, offset, Integer.parseInt(jzt.getDataType())));
+								BaseLocator.holdingRegister(slaveId, offset, Integer.parseInt(dataType)));
 						batchSend = true;
 				}
 				if (di.equals("02")) {
@@ -365,6 +383,9 @@ public class JstZcDevController extends JeecgController<JstZcDev, IJstZcDevServi
 			return Result.ok("reading all",true);
 		}else {
 			String hr = jstZcDevService.handleRead(catNo);
+			if(hr.equals("stop")){
+				JstConstant.runflag=false;
+			}
 		}
 		return Result.ok("ok",JstConstant.runflag);
 	}

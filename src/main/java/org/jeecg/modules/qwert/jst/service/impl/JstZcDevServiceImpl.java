@@ -123,6 +123,15 @@ public class JstZcDevServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
 		Thread th = new Thread(mt);
 		th.setPriority(8);
 		th.start();
+		if(JstConstant.runall==false){
+			try {
+				th.join();
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}finally {
+				return "stop";
+			}
+		}
 		return null;
 	}
 	

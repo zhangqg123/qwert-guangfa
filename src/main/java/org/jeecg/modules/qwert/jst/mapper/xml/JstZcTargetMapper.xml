@@ -20,6 +20,10 @@
 		SELECT * FROM jst_zc_target where dev_type=#{dev_type} order by instruct,address
 	</select>
 	<select id="queryJztList5" parameterType="Object"  resultMap="JstZcTarget">
-		select * from jst_zc_target where dev_type in (select origin_id from jst_zc_cat where org_user=#{orgUser})
+<!--		select * from jst_zc_target where dev_type in (select origin_id from jst_zc_cat where org_user=#{orgUser}) -->
+		SELECT * FROM jst_zc_target where dev_no=#{dev_no} order by instruct,address
+	</select>
+	<select id="queryJztPageByOrgUser" parameterType="Object"  resultMap="JstZcTarget">
+			select * from jst_zc_target where dev_type in (select origin_id from jst_zc_cat where org_user=#{orgUser})
 	</select>
 </mapper>

@@ -35,6 +35,10 @@ public class JstZcTarget implements Serializable {
 	@TableId(type = IdType.ID_WORKER_STR)
     @ApiModelProperty(value = "id")
     private java.lang.String id;
+	/**设备编号*/
+	@Excel(name = "设备编号", width = 15)
+	@ApiModelProperty(value = "设备编号")
+	private java.lang.String devNo;
 	/**设备类型*/
 	@Excel(name = "设备类型", width = 15)
     @ApiModelProperty(value = "设备类型")

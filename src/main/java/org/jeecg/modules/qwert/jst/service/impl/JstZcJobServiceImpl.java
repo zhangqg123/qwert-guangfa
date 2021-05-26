@@ -74,9 +74,9 @@ public class JstZcJobServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
 		start = System.currentTimeMillis();
 		List<JstZcDev> jzdCollect = queryJzdList2(catOrigin);
 		for (int i = 0; i < jzdCollect.size(); i++) {
-			if(!JstConstant.runflag) {
-				break;
-			}
+//			if(!JstConstant.runflag) {
+//				break;
+//			}
 			JstZcDev dev = jzdCollect.get(i);
 			readDev(dev.getId());
 		}
@@ -86,6 +86,8 @@ public class JstZcJobServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
 
 	@Override
 	public void readDev(String devId) {
+		long start, end;
+		start = System.currentTimeMillis();
 		List resList = new ArrayList();
 		JstZcDev jzd = getById(devId);
 		String devNo=jzd.getDevNo();
@@ -121,6 +123,8 @@ public class JstZcJobServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
 		if (type.equals("SNMP")) {
 			handleSnmp(type, resList, modNo,devNo, devName, catNo, jsonConInfo, ipAddress, jztCollect);
 		}
+		end = System.currentTimeMillis();
+		System.out.println(devName+" 开始时间:" + start + "; 结束时间:" + end + "; 用时:" + (end - start) + "(ms)");
 	}
 
 	private void handleSnmp(String type,List resList, String modNo,String devNo, String devName, String catNo, JSONObject jsonConInfo, String ipAddress, List<JstZcTarget> jztCollect)  {

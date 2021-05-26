@@ -19,6 +19,7 @@ public interface IJstZcTargetService extends IService<JstZcTarget> {
 	public List<JstZcTarget2> queryJztList2();
 	public List<JstZcTarget> queryJztList3(String dev_type);
 	public List<JstZcTarget> queryJztList4(String dev_type);
+	public List<JstZcTarget> queryJztList5(String dev_no);
 	public boolean edit(JstZcTarget jstZcTarget);
 	Page<JstZcTarget> queryJztPageByOrgUser(Page<JstZcTarget> page, String orgUser);
 }

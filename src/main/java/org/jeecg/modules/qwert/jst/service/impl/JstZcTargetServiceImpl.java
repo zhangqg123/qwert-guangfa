@@ -61,6 +61,10 @@ public class JstZcTargetServiceImpl extends ServiceImpl<JstZcTargetMapper, JstZc
 		List<JstZcTarget> jztList = this.jstZcTargetMapper.queryJztList4(dev_type);			
 		return jztList;
 	}
+	public List<JstZcTarget> queryJztList5(String dev_no) {
+		List<JstZcTarget> jztList = this.jstZcTargetMapper.queryJztList5(dev_no);
+		return jztList;
+	}
 	@Override
 	public Page<JstZcTarget> queryJztPageByOrgUser(Page<JstZcTarget> page, String orgUser) {
 		 return page.setRecords(jstZcTargetMapper.queryJztPageByOrgUser(page, orgUser));
