@@ -344,6 +344,7 @@ public class JstZcDevController extends JeecgController<JstZcDev, IJstZcDevServi
 					System.out.println(results);
 				}
 				resList.add(results.toString());
+//				resList.add("{gf10001c027=22354}");
 			}
 			if(JstConstant.debugflag==1) {
 				System.out.println(devNo+"::"+resList.size());

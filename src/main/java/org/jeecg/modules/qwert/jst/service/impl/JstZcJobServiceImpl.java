@@ -93,6 +93,7 @@ public class JstZcJobServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
 		String devNo=jzd.getDevNo();
 		String devName=jzd.getDevName();
 		String catNo = jzd.getDevCat();
+		String orgUser = jzd.getOrgUser();
 		String modNo=jzd.getModNo();
 		if(modNo==null||modNo.equals("")) {
 			modNo="blank";
@@ -113,7 +114,13 @@ public class JstZcJobServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
 		String community = null;
 
 		BatchResults<String> results = null;
-		List<JstZcTarget> jztCollect = jstZcTargetService.queryJztList4(catNo);
+		List<JstZcTarget> jztCollect = null;
+		if(orgUser.equals("guangfa")){
+			jztCollect = jstZcTargetService.queryJztList5(devNo);
+		}
+		if(orgUser.equals("jinshitan")){
+			jztCollect = jstZcTargetService.queryJztList4(catNo);
+		}
 
 		if (type.equals("SOCKET")||type.equals("MODBUSRTU")||type.equals("MODBUSASCII")||type.equals("MODBUSTCP")) {
 			handleModus(type, resList, devNo, devName, catNo, jsonConInfo, sleeptime,
@@ -281,7 +288,19 @@ public class JstZcJobServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
 					JstZcTarget jzt = jztCollect.get(j);
 					String di = jzt.getInstruct().substring(0, 2);
 
-					int	offset = Integer.parseInt(jzt.getAddress());
+			//		int	offset = Integer.parseInt(jzt.getAddress());
+					int offset=0;
+					String ta = jzt.getAddress();
+					String[] tas=null;
+					if(ta!=null&&ta.indexOf(".")!=-1){
+						tas = ta.split("\\.");
+						ta=tas[0];
+					}
+					if(jzt.getAddressType()!=null && jzt.getAddressType().equals("HEX")){
+						offset = Integer.parseInt(ta,16);
+					}else{
+						offset = Integer.parseInt(ta);
+					}
 
 					if (pointNumber>0 && offset==tmp2Offset) {
 						continue;
@@ -328,17 +347,21 @@ public class JstZcJobServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
 
 					String res = null;
 					Map<String, String> resMap = new HashMap<String, String>();
+					String dataType = "2";
+					if(jzt.getDataType()!=null){
+						dataType=jzt.getDataType();
+					}
 
 					if (di.equals("04")) {
 						targetNos=targetNos+jzt.getId()+",";
 						batch.addLocator(jzt.getId(), BaseLocator.inputRegister(slaveId, offset,
-								Integer.parseInt(jzt.getDataType())));
+								Integer.parseInt(dataType)));
 						batchSend = true;
 					}
 					if (di.equals("03")) {
 						targetNos=targetNos+jzt.getId()+",";
 						batch.addLocator(jzt.getId(), BaseLocator.holdingRegister(slaveId, offset,
-								Integer.parseInt(jzt.getDataType())));
+								Integer.parseInt(dataType)));
 						batchSend = true;
 					}
 					if (di.equals("02")) {
@@ -347,7 +370,7 @@ public class JstZcJobServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
 					}
 					Thread.sleep(sleeptime/2);
 				}
-				if (batchSend == true && alarmFlag==false) {
+	/*			if (batchSend == true && alarmFlag==false) {
 					results = master.send(batch);
 					Thread.sleep(sleeptime);
 
@@ -377,7 +400,9 @@ public class JstZcJobServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
 					if(JstConstant.debugflag==1) {
 						System.out.println(devNo+"::"+resList.size());
 					}
-				}
+				}*/
+				resList.add("{gf10001x0010=12345}");
+
 				String alarm=null;
 				if(resList.size()>0) {
 					alarm=trackAlarm(resList, jztCollect);
@@ -479,160 +504,150 @@ public class JstZcJobServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
 				boolean jztfind = false;
 				JstZcTarget jzt = jstZcTargetService.getById(r3[0]);
 
-//				for(int rk=0;rk<jztCollect.size();rk++) {
-//					JstZcTarget jzt = jztCollect.get(rk);
-					if(jzt.getAlarmPoint()!=null&&jzt.getAlarmPoint().equals("1")&& jzt.getInfoType()!=null ) {
-/*						if(r3[0].equals(jzt.getId())) {
-							jztfind=true;
-						}else {
-							JstZcTarget jzt2 = jstZcTargetService.getById(r3[0]);
-							if(jzt.getAddress().equals(jzt2.getAddress()) && jzt.getInstruct().equals(jzt2.getInstruct())) {
-								jztfind=true;
+				if(jzt.getAlarmPoint()!=null&&jzt.getAlarmPoint().equals("1")&& jzt.getInfoType()!=null ) {
+					jztfind=true;
+				}
+				if(jzt.getInterceptBit()!=null && jzt.getInfoType()!=null) {
+					jztfind=true;
+				}
+				if(jzt.getAddress().indexOf('.')!=-1){
+					jztfind=true;
+				}
+				if(jztfind) {
+					if(jzt.getInfoType().equals("digital")||jzt.getInfoType().equals("状态量")){
+						if((jzt.getInterceptBit()!=null&&jzt.getInterceptBit().indexOf("bitIndex")!=-1)||
+							jzt.getAddress().indexOf(".")!=-1) {
+							String tmpinstruct=jzt.getInstruct();
+							String tmpaddress=jzt.getAddress();
+							List<JstZcTarget> jztc=null;
+							if(tmpaddress.indexOf('.')!=-1){
+								String[] tas = tmpaddress.split("\\.");
+								String ta = tas[0];
+								jztc = jztCollect.stream().filter(u -> ta.equals(u.getAddress().substring(0,4))).collect(Collectors.toList());
+							}else{
+								String ta = jzt.getAddress();
+								jztc = jztCollect.stream().filter(u -> ta.equals(u.getAddress())).collect(Collectors.toList());
 							}
-						}*/
-						jztfind=true;
-					}
-					if(jzt.getInterceptBit()!=null && jzt.getInfoType()!=null) {
-						jztfind=true;
-					}
-						if(jztfind) {
-							if(jzt.getInfoType().equals("digital")||jzt.getInfoType().equals("状态量")){
-								if(jzt.getInterceptBit()!=null&&jzt.getInterceptBit().indexOf("bitIndex")!=-1) {
-									String tmpinstruct=jzt.getInstruct();
-		                            String tmpaddress=jzt.getAddress();
-		            		        List<JstZcTarget> jztc = jztCollect.stream().filter(u -> tmpaddress.equals(u.getAddress())).collect(Collectors.toList());
 
-		                            for(int n=0;n<jztc.size();n++){
-		/*                       //     	if((rk+n+1)>jztCollect.size()) {
-			                           	if((n+1)>jztCollect.size()) {
-		                            		break;
-		                            	}
-//		                                JstZcTarget item = jztCollect.get(rk+n);
-		                                if(!item.getInstruct().equals(tmpinstruct)){
-		                                    break;
-		                                };
-		                                if(!item.getAddress().equals(tmpaddress)){
-		                                    break;
-		                                };
-	*/
-		                                JstZcTarget item = jztc.get(n);
+							for(int n=0;n<jztc.size();n++){
+								JstZcTarget item = jztc.get(n);
+								if(item.getAlarmPoint()==null||item.getAlarmPoint().equals("")||item.getAlarmPoint().equals("0")) {
+									continue;
+								}
+								if(!item.getAlarmPoint().equals("1")) {
+									continue;
+								}
+								String str1=r3[1];
+								if(str1.equals("true")) {
+									str1="1";
+								}
+								if(str1.equals("false")) {
+									str1="0";
+								}
 
-		                           //     String aa = Integer.toBinaryString(Integer.parseInt(r3[1]));
-		                           //     String a0=String.format("%16d", Integer.parseInt(aa)).replace(" ", "0");
-		                                if(item.getAlarmPoint()==null||item.getAlarmPoint().equals("")||item.getAlarmPoint().equals("0")) {
-		                                	continue;
-		                                }
-		                                if(!item.getAlarmPoint().equals("1")) {
-		                                	continue;
-		                                }
-		                                String str1=r3[1];
-		                                if(str1.equals("true")) {
-		                                	str1="1";
-		                                }
-		                                if(str1.equals("false")) {
-		                                	str1="0";
-		                                }
-		                                
-		                                String binaryStr = Integer.toBinaryString(Integer.parseInt(str1));
-		                                while(binaryStr.length() < 16){
-		                                    binaryStr = "0"+binaryStr;
-		                                }
-		                                
-		                                String a1=item.getInterceptBit();
-		                                String[] a2=a1.split(",");
-		                                String[] a3=a2[0].split(":");
-		                                int a4=Integer.parseInt(a3[1]);
-		                                int a5=15-a4;
-		                                String a6 = binaryStr.substring(a5,a5+1);
-		                                
-										String bjz = item.getCtrlUp();
-				//						if(item.getId().equals("5800")) {
-				//							int aaa=2;
-				//							int ddd=aaa;
-				//						}
-										if(bjz.indexOf("==")!=-1) {
-											String[] bj = bjz.split("==");
-											if(a6.equals(bj[1])) {
-												alarmNo+=item.getId()+",";
-												alarmValue+=item.getTargetName()+",";
-											}
+								String binaryStr = Integer.toBinaryString(Integer.parseInt(str1));
+								while(binaryStr.length() < 16){
+									binaryStr = "0"+binaryStr;
+								}
+								String a6=null;
+								if(item.getAddress().indexOf('.')==-1) {
+									String a1 = item.getInterceptBit();
+									String[] a2 = a1.split(",");
+									String[] a3 = a2[0].split(":");
+									int a4 = Integer.parseInt(a3[1]);
+									int a5 = 15 - a4;
+									a6 = binaryStr.substring(a5, a5 + 1);
+								}else{
+									String a1=item.getAddress();
+									String[] a2 = a1.split("\\.");
+									int a4 = Integer.parseInt(a2[1]);
+									int a5 = 15 - a4;
+									a6 = binaryStr.substring(a5, a5 + 1);
+								}
+								String bjz = item.getCtrlUp();
+								if(bjz!=null) {
+									if (bjz.indexOf("==") != -1) {
+										String[] bj = bjz.split("==");
+										if (a6.equals(bj[1])) {
+											alarmNo += item.getId() + ",";
+											alarmValue += item.getTargetName() + ",";
 										}
-										if(bjz.indexOf("!=")!=-1) {
-											String[] bj = bjz.split("!=");
-											if(!a6.equals(bj[1])) {
-												alarmNo+=item.getId()+",";
-												alarmValue+=item.getTargetName()+",";
-											}
-										}
-		                            }
-								}else {
-									String bjz = jzt.getCtrlUp();
-									if(bjz!=null) {
-										if(bjz.indexOf("==")!=-1) {
-											String[] bj = bjz.split("==");
-											if(r3[1].equals(bj[1])) {
-												alarmNo+=jzt.getId()+",";
-												alarmValue+=jzt.getTargetName()+",";
-											}
-										}
-										if(bjz.indexOf("!=")!=-1) {
-											String[] bj = bjz.split("!=");
-											if(!r3[1].equals(bj[1])) {
-												alarmNo+=jzt.getId()+",";
-												alarmValue+=jzt.getTargetName()+",";
-											}
+									}
+									if (bjz.indexOf("!=") != -1) {
+										String[] bj = bjz.split("!=");
+										if (!a6.equals(bj[1])) {
+											alarmNo += item.getId() + ",";
+											alarmValue += item.getTargetName() + ",";
 										}
 									}
 								}
-							}else {
-								String[] mn = jzt.getCtrlDown().split(";");
-								
-								
-								for(int rm=0;rm<mn.length;rm++) {
-									String yinzi=jzt.getYinzi();
-									if(mn[rm].indexOf("<")!=-1) {
-										String a1 = mn[rm].replace("<", "").replace("=", "");
-										float r4=0f;
-										String str=r3[1];
-										if(str.contains(".")) {
-											 int indexOf = str.indexOf(".");
-											 str = str.substring(0, indexOf);
-										}
-										if(yinzi!=null) {
-											r4=Integer.parseInt(str)/Integer.parseInt(yinzi);
-										}else {
-											r4=Integer.parseInt(str);
-										}
-										if(r4<=Integer.parseInt(a1)) {
-											alarmNo+=jzt.getId()+",";
-											alarmValue+=jzt.getTargetName()+"-报警值-"+r4+",";
-										}
-									}
-									if(mn[rm].indexOf(">")!=-1) {
-										String a1 = mn[rm].replace(">", "").replace("=", "");
-								//		String yinzi=jzt.getYinzi();
-										float r4=0f;
-										String str=r3[1];
-										if(str.contains(".")) {
-											 int indexOf = str.indexOf(".");
-											 str = str.substring(0, indexOf);
-										}
-										if(yinzi!=null) {
-											r4=Integer.parseInt(str)/Integer.parseInt(yinzi);
-										}else {
-											r4=Integer.parseInt(str);
-										}
-										if(r4>=Integer.parseInt(a1)) {
-											alarmNo+=jzt.getId()+",";
-											alarmValue+=jzt.getTargetName()+"-报警值-"+r4+",";
-										}
+							}
+						}else {
+							String bjz = jzt.getCtrlUp();
+							if(bjz!=null) {
+								if(bjz.indexOf("==")!=-1) {
+									String[] bj = bjz.split("==");
+									if(r3[1].equals(bj[1])) {
+										alarmNo+=jzt.getId()+",";
+										alarmValue+=jzt.getTargetName()+",";
 									}
 								}
-								
+								if(bjz.indexOf("!=")!=-1) {
+									String[] bj = bjz.split("!=");
+									if(!r3[1].equals(bj[1])) {
+										alarmNo+=jzt.getId()+",";
+										alarmValue+=jzt.getTargetName()+",";
+									}
+								}
 							}
 						}
-					//}
-				//}
+					}else {
+						String[] mn = jzt.getCtrlDown().split(";");
+
+
+						for(int rm=0;rm<mn.length;rm++) {
+							String yinzi=jzt.getYinzi();
+							if(mn[rm].indexOf("<")!=-1) {
+								String a1 = mn[rm].replace("<", "").replace("=", "");
+								float r4=0f;
+								String str=r3[1];
+								if(str.contains(".")) {
+									 int indexOf = str.indexOf(".");
+									 str = str.substring(0, indexOf);
+								}
+								if(yinzi!=null) {
+									r4=Integer.parseInt(str)/Integer.parseInt(yinzi);
+								}else {
+									r4=Integer.parseInt(str);
+								}
+								if(r4<=Integer.parseInt(a1)) {
+									alarmNo+=jzt.getId()+",";
+									alarmValue+=jzt.getTargetName()+"-报警值-"+r4+",";
+								}
+							}
+							if(mn[rm].indexOf(">")!=-1) {
+								String a1 = mn[rm].replace(">", "").replace("=", "");
+						//		String yinzi=jzt.getYinzi();
+								float r4=0f;
+								String str=r3[1];
+								if(str.contains(".")) {
+									 int indexOf = str.indexOf(".");
+									 str = str.substring(0, indexOf);
+								}
+								if(yinzi!=null) {
+									r4=Integer.parseInt(str)/Integer.parseInt(yinzi);
+								}else {
+									r4=Integer.parseInt(str);
+								}
+								if(r4>=Integer.parseInt(a1)) {
+									alarmNo+=jzt.getId()+",";
+									alarmValue+=jzt.getTargetName()+"-报警值-"+r4+",";
+								}
+							}
+						}
+
+					}
+				}
 			}
 		}
 		String alarm=null;
