@@ -47,8 +47,8 @@ public class MasterTest {
 //    	TestSerialPortWrapper wrapper = new TestSerialPortWrapper(commPortId, baudRate, flowControlIn, flowControlOut, dataBits, stopBits, parity);
         
         IpParameters ipParameters = new IpParameters();
-        ipParameters.setHost("10.66.70.103");
-        ipParameters.setPort(10001);
+        ipParameters.setHost("127.0.0.1");
+        ipParameters.setPort(502);
         ipParameters.setEncapsulated(true);
 
         ModbusFactory modbusFactory = new ModbusFactory();
@@ -60,7 +60,7 @@ public class MasterTest {
 
         try {
             master.init();
-            int slaveId = 2;
+            int slaveId = 1;
 
           //  readCoilTest(master, slaveId, 98, 200);
             // readCoilTest(master, slaveId, 99, 200);
@@ -86,7 +86,7 @@ public class MasterTest {
             // readCoilTest(master, slaveId, 10, 5);
             // readDiscreteInputTest(master, slaveId, 10, 6);
             // readDiscreteInputTest(master, slaveId, 10, 5);
-            readHoldingRegistersTest(master, slaveId, 140, 2);
+   //         readHoldingRegistersTest(master, slaveId, 22, 2);
            //  readHoldingRegistersTest(master, slaveId, 3037, 2);
     //         readInputRegistersTest(master, slaveId, 2340, 2);
             // readInputRegistersTest(master, slaveId, 0, 5);
@@ -111,7 +111,7 @@ public class MasterTest {
             // master.setValue(locator, false);
             // System.out.println(master.getValue(locator));
 
-         //    BatchRead<String> batch = new BatchRead<String>();
+             BatchRead<String> batch = new BatchRead<String>();
             // batch.addLocator("0-1 sb true", BaseLocator.holdingRegisterBit(slaveId, 0, 1));
             // batch.addLocator("1-1 sb false", BaseLocator.holdingRegisterBit(slaveId, 1, 1));
 
@@ -163,11 +163,11 @@ public class MasterTest {
              batch.addLocator("hr4",
                      BaseLocator.inputRegister(slaveId, 2352, DataType.FOUR_BYTE_FLOAT));
 */
-  /*          batch.addLocator("hr5",
-                     BaseLocator.holdingRegister(slaveId, 3083, DataType.FOUR_BYTE_FLOAT));
+            batch.addLocator("hr5",
+                     BaseLocator.holdingRegister(slaveId, 22, DataType.TWO_BYTE_INT_UNSIGNED));
              batch.addLocator("hr6",
-                     BaseLocator.holdingRegister(slaveId, 3109, DataType.FOUR_BYTE_FLOAT));
-             batch.addLocator("hr7",
+                     BaseLocator.holdingRegister(slaveId, 23, DataType.TWO_BYTE_INT_UNSIGNED));
+/*             batch.addLocator("hr7",
                      BaseLocator.holdingRegister(slaveId, 3203, DataType.TWO_BYTE_INT_UNSIGNED));
              batch.addLocator("hr8",
                      BaseLocator.holdingRegister(slaveId, 3204, DataType.TWO_BYTE_INT_UNSIGNED));
@@ -176,13 +176,13 @@ public class MasterTest {
              batch.addLocator("hr10",
                      BaseLocator.holdingRegister(slaveId, 3206, DataType.TWO_BYTE_INT_UNSIGNED));
 */
-          //   BatchResults<String> results = master.send(batch);
-          //   System.out.println(results);
-/*             System.out.println(results.getValue("hr1"));
-             System.out.println(results.getValue("hr2"));
-             System.out.println(results.getValue("hr3"));
-             System.out.println(results.getValue("hr4"));
-*/
+             BatchResults<String> results = master.send(batch);
+             System.out.println(results);
+             System.out.println(results.getValue("hr5"));
+             System.out.println(results.getValue("hr6"));
+//             System.out.println(results.getValue("hr3"));
+//             System.out.println(results.getValue("hr4"));
+
 /*
              System.out.println(results.getValue("hr5"));
              System.out.println(results.getValue("hr6"));

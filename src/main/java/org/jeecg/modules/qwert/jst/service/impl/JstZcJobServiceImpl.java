@@ -104,6 +104,7 @@ public class JstZcJobServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
 		String ipAddress = jsonConInfo.getString("ipAddress");
 		String port = jsonConInfo.getString("port");
 		String type = jsonConInfo.getString("type");
+		String proType = jsonConInfo.getString("proType");
 		String stime = jsonConInfo.getString("sleeptime");
 		int sleeptime= JstConstant.sleeptime;
 		if(stime!=null && !stime.equals("")) {
@@ -122,12 +123,13 @@ public class JstZcJobServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
 			jztCollect = jstZcTargetService.queryJztList4(catNo);
 		}
 
-		if (type.equals("SOCKET")||type.equals("MODBUSRTU")||type.equals("MODBUSASCII")||type.equals("MODBUSTCP")) {
-			handleModus(type, resList, devNo, devName, catNo, jsonConInfo, sleeptime,
+//		if (type.equals("SOCKET")||type.equals("MODBUSRTU")||type.equals("MODBUSASCII")||type.equals("MODBUSTCP")) {
+		if (proType.toUpperCase().equals("MODBUS")) {
+			handleModbus(type, resList, devNo, devName, catNo, jsonConInfo, sleeptime,
 					jztCollect);
 		}
 
-		if (type.equals("SNMP")) {
+		if (proType.toUpperCase().equals("SNMP")) {
 			handleSnmp(type, resList, modNo,devNo, devName, catNo, jsonConInfo, ipAddress, jztCollect);
 		}
 		end = System.currentTimeMillis();
@@ -220,7 +222,7 @@ public class JstZcJobServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
 		repository.insertAudit(audit);
 	}
 
-	private void handleModus(String type, List resList, String devNo,
+	private void handleModbus(String type, List resList, String devNo,
 							String devName, String catNo, JSONObject jsonConInfo, int sleeptime, List<JstZcTarget> jztCollect)  {
 		BatchResults<String> results;
 		String slave = jsonConInfo.getString("slave");

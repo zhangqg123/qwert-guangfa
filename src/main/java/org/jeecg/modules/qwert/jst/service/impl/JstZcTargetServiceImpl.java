@@ -6,6 +6,7 @@ import javax.annotation.Resource;
 
 import org.jeecg.common.constant.CacheConstant;
 import org.jeecg.common.system.query.QueryGenerator;
+import org.jeecg.modules.qwert.jst.entity.GuangfaBranch;
 import org.jeecg.modules.qwert.jst.entity.JstZcCat;
 import org.jeecg.modules.qwert.jst.entity.JstZcTarget;
 import org.jeecg.modules.qwert.jst.entity.JstZcTarget2;
@@ -69,5 +70,11 @@ public class JstZcTargetServiceImpl extends ServiceImpl<JstZcTargetMapper, JstZc
 	public Page<JstZcTarget> queryJztPageByOrgUser(Page<JstZcTarget> page, String orgUser) {
 		 return page.setRecords(jstZcTargetMapper.queryJztPageByOrgUser(page, orgUser));
 	}
-	
+
+	@Override
+	public List<GuangfaBranch> queryGfBranch() {
+		List<GuangfaBranch> pvList = this.jstZcTargetMapper.queryGfBranch();
+		return pvList;
+	}
+
 }

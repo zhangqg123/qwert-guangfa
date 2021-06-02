@@ -2,6 +2,7 @@ package org.jeecg.modules.qwert.jst.service;
 
 import java.util.List;
 
+import org.jeecg.modules.qwert.jst.entity.GuangfaBranch;
 import org.jeecg.modules.qwert.jst.entity.JstZcTarget;
 import org.jeecg.modules.qwert.jst.entity.JstZcTarget2;
 
@@ -22,4 +23,6 @@ public interface IJstZcTargetService extends IService<JstZcTarget> {
 	public List<JstZcTarget> queryJztList5(String dev_no);
 	public boolean edit(JstZcTarget jstZcTarget);
 	Page<JstZcTarget> queryJztPageByOrgUser(Page<JstZcTarget> page, String orgUser);
+
+    List<GuangfaBranch> queryGfBranch();
 }

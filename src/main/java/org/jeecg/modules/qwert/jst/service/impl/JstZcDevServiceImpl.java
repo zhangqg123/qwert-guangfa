@@ -25,11 +25,7 @@ import org.jeecg.modules.qwert.conn.snmp.SnmpData;
 import org.jeecg.modules.qwert.conn.dbconn.mongo.common.model.Alarm;
 import org.jeecg.modules.qwert.conn.dbconn.mongo.common.model.Audit;
 import org.jeecg.modules.qwert.conn.dbconn.mongo.repository.impl.DemoRepository;
-import org.jeecg.modules.qwert.jst.entity.JstZcAlarm;
-import org.jeecg.modules.qwert.jst.entity.JstZcCat;
-import org.jeecg.modules.qwert.jst.entity.JstZcConfig;
-import org.jeecg.modules.qwert.jst.entity.JstZcDev;
-import org.jeecg.modules.qwert.jst.entity.JstZcTarget;
+import org.jeecg.modules.qwert.jst.entity.*;
 import org.jeecg.modules.qwert.jst.mapper.JstZcDevMapper;
 import org.jeecg.modules.qwert.jst.service.IJstZcAlarmService;
 import org.jeecg.modules.qwert.jst.service.IJstZcCatService;
@@ -92,7 +88,13 @@ public class JstZcDevServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
 		List<JstZcDev> jzdList = this.jstZcDevMapper.queryJzdList2(catNo);
 		return jzdList;
 	}
-	
+
+	@Override
+	public List<GuangfaBranch> queryGfBranch() {
+		List<GuangfaBranch> pvList = this.jstZcDevMapper.queryGfBranch();
+		return pvList;
+	}
+
 	@Override
 	public String handleRead(String catNo) {
 		boolean allflag = true;
@@ -236,6 +238,7 @@ public class JstZcDevServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
 			String ipAddress = jsonConInfo.getString("ipAddress");
 			String port = jsonConInfo.getString("port");
 			String type = jsonConInfo.getString("type");
+			String proType = jsonConInfo.getString("proType");
 			String stime = jsonConInfo.getString("sleeptime");
 			int sleeptime=JstConstant.sleeptime;
 			if(stime!=null && !stime.equals("")) {
@@ -251,12 +254,13 @@ public class JstZcDevServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
 			BatchResults<String> results = null;
 			List<JstZcTarget> jztCollect = jstZcTargetService.queryJztList4(catNo);
 
-			if (type.equals("SOCKET")||type.equals("MODBUSRTU")||type.equals("MODBUSASCII")||type.equals("MODBUSTCP")) {
-				handleModus(type,session, producer, producer2, producer9, resList, devNo, devName, catNo, jsonConInfo, sleeptime,
+//			if (type.equals("SOCKET")||type.equals("MODBUSRTU")||type.equals("MODBUSASCII")||type.equals("MODBUSTCP")) {
+			if (proType.toUpperCase().equals("MODBUS")) {
+				handleModbus(type,session, producer, producer2, producer9, resList, devNo, devName, catNo, jsonConInfo, sleeptime,
 						jztCollect);
 			}
 
-			if (type.equals("SNMP")) {
+			if (proType.toUpperCase().equals("SNMP")) {
 				handleSnmp(type,session, producer, producer2, producer9, resList, modNo,devNo, devName, catNo, jsonConInfo, ipAddress, jztCollect);
 			}
 
@@ -377,7 +381,7 @@ public class JstZcDevServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
 		}
 	}
 
-	public void handleModus(String type, Session session, MessageProducer producer, MessageProducer producer2, MessageProducer producer9, List resList, String devNo,
+	public void handleModbus(String type, Session session, MessageProducer producer, MessageProducer producer2, MessageProducer producer9, List resList, String devNo,
 							String devName, String catNo, JSONObject jsonConInfo, int sleeptime, List<JstZcTarget> jztCollect) throws JMSException {
 		BatchResults<String> results;
 		String slave = jsonConInfo.getString("slave");

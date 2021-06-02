@@ -7,6 +7,9 @@
 	<resultMap id="JstZcTarget2" type="org.jeecg.modules.qwert.jst.entity.JstZcTarget2">
 	   <!-- result属性映射非匹配字段 -->
 	</resultMap>
+	<resultMap id="GuangfaBranch" type="org.jeecg.modules.qwert.jst.entity.GuangfaBranch">
+		<!-- result属性映射非匹配字段 -->
+	</resultMap>
 	<select id="queryJztList" parameterType="Object"  resultMap="JstZcTarget">
 		SELECT * FROM jst_zc_target order by instruct,tmp
 	</select>
@@ -25,5 +28,12 @@
 	</select>
 	<select id="queryJztPageByOrgUser" parameterType="Object"  resultMap="JstZcTarget">
 			select * from jst_zc_target where dev_type in (select origin_id from jst_zc_cat where org_user=#{orgUser})
+	</select>
+	<select id="queryGfBranch" parameterType="Object"  resultMap="GuangfaBranch">
+		select tagname,pv,time from (select tagname,pv,time from gf_ac order by time desc limit 10000) as t1 group by t1.tagname
+		union all
+		select tagname,pv,time from (select tagname,pv,time from gf_th order by time desc limit 10000) as t2 group by t2.tagname
+		union all
+		select tagname,pv,time from (select tagname,pv,time from gf_ups order by time desc limit 10000) as t3 group by t3.tagname
 	</select>
 </mapper>

@@ -3,6 +3,7 @@ package org.jeecg.modules.qwert.jst.mapper;
 import java.util.List;
 
 import org.apache.ibatis.annotations.Param;
+import org.jeecg.modules.qwert.jst.entity.GuangfaBranch;
 import org.jeecg.modules.qwert.jst.entity.JstZcCat;
 import org.jeecg.modules.qwert.jst.entity.JstZcDev;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
@@ -19,4 +20,5 @@ public interface JstZcDevMapper extends BaseMapper<JstZcDev> {
 
 	public List<JstZcDev> queryJmacList();
 
+	List<GuangfaBranch> queryGfBranch();
 }

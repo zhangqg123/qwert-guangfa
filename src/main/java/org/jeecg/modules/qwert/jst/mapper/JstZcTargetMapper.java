@@ -3,6 +3,7 @@ package org.jeecg.modules.qwert.jst.mapper;
 import java.util.List;
 
 import org.apache.ibatis.annotations.Param;
+import org.jeecg.modules.qwert.jst.entity.GuangfaBranch;
 import org.jeecg.modules.qwert.jst.entity.JstZcAlarm;
 import org.jeecg.modules.qwert.jst.entity.JstZcTarget;
 import org.jeecg.modules.qwert.jst.entity.JstZcTarget2;
@@ -24,4 +25,6 @@ public interface JstZcTargetMapper extends BaseMapper<JstZcTarget> {
 	public List<JstZcTarget> queryJztList4(@Param("dev_type") String dev_type);
 	public List<JstZcTarget> queryJztList5(@Param("dev_no") String dev_no);
 	public List<JstZcTarget> queryJztPageByOrgUser(Page<JstZcTarget> page,@Param("orgUser") String orgUser);
+
+	List<GuangfaBranch> queryGfBranch();
 }

@@ -23,6 +23,17 @@ import org.jeecg.common.api.vo.Result;
 import org.jeecg.common.system.query.QueryGenerator;
 import org.jeecg.common.util.DateUtils;
 import org.jeecg.modules.qwert.conn.modbus4j.test.TestSerialPortWrapper;
+import org.jeecg.modules.qwert.conn.qudong.QwertFactory;
+import org.jeecg.modules.qwert.conn.qudong.QwertMaster;
+import org.jeecg.modules.qwert.conn.qudong.exception.QudongTransportException;
+import org.jeecg.modules.qwert.conn.qudong.msg.ReadDianzongRequest;
+import org.jeecg.modules.qwert.conn.qudong.msg.ReadDianzongResponse;
+import org.jeecg.modules.qwert.conn.qudong.msg.ReadM7000Request;
+import org.jeecg.modules.qwert.conn.qudong.msg.ReadM7000Response;
+import org.jeecg.modules.qwert.conn.qudong.msg.delta.ReadDeltaRequest;
+import org.jeecg.modules.qwert.conn.qudong.msg.delta.ReadDeltaResponse;
+import org.jeecg.modules.qwert.conn.qudong.msg.kstar.ReadKstarRequest;
+import org.jeecg.modules.qwert.conn.qudong.msg.kstar.ReadKstarResponse;
 import org.jeecg.modules.qwert.conn.snmp.SnmpData;
 import org.jeecg.modules.qwert.conn.dbconn.mongo.common.model.Audit;
 import org.jeecg.modules.qwert.conn.dbconn.mongo.repository.impl.DemoRepository;
@@ -54,6 +65,7 @@ import org.jeecg.modules.qwert.conn.modbus4j.source.locator.BaseLocator;
 import lombok.extern.slf4j.Slf4j;
 
 import org.jeecg.common.system.base.controller.JeecgController;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.ModelAndView;
@@ -171,33 +183,258 @@ public class JstZcDevController extends JeecgController<JstZcDev, IJstZcDevServi
 			jztList = JSONArray.parseArray(revList, JstZcTarget.class);
 		}
 		JSONObject jsonConInfo = JSON.parseObject(conInfo);
-		String ipAddress = jsonConInfo.getString("ipAddress");
-		String port = jsonConInfo.getString("port");
 		String type = jsonConInfo.getString("type");
-		String retry = jsonConInfo.getString("retry");
-
-		String slave = null;
-		String packageBit = null;
-
-		String version = null;
-		String timeOut = null;
-		String community = null;
+		String proType = jsonConInfo.getString("proType");
 		BatchResults<String> results = null;
-		if (type.equals("SOCKET")||type.equals("MODBUSRTU")||type.equals("MODBUSASCII")||type.equals("MODBUSTCP")) {
+//		if (type.equals("SOCKET")||type.equals("MODBUSRTU")||type.equals("MODBUSASCII")||type.equals("MODBUSTCP")) {
+		if (proType.toUpperCase().equals("MODBUS")) {
 			handleModbus(type,devNo, jztList, resList, jsonConInfo);
 		}
-		if (type.equals("SNMP")) {
-			handleSnmp(jztList, resList, jsonConInfo, ipAddress);
+		if (proType.toUpperCase().equals("SNMP")) {
+			handleSnmp(jztList, resList, jsonConInfo);
+		}
+		if (proType.toUpperCase().equals("DELTA")) {
+			handleDelta(jztList, resList, jsonConInfo);
+		}
+		if (proType.toUpperCase().equals("KSTAR")) {
+			handlekStar(jztList, resList, jsonConInfo);
+		}
+		if (proType.toUpperCase().equals("7000D")) {
+			handleM7000D(jztList, resList, jsonConInfo);
+		}
+		if (proType.toUpperCase().equals("PMBUS")) {
+			handlePmbus(jztList, resList, jsonConInfo);
 		}
 		end = System.currentTimeMillis();
+		System.out.println((resList.toString()));
 		System.out.println("开始时间:" + start + "; 结束时间:" + end + "; 用时:" + (end - start) + "(ms)");
 		return Result.ok(resList);
 	}
 
-	private void handleSnmp(List<JstZcTarget> jztList, List resList, JSONObject jsonConInfo, String ipAddress) {
+	private void handlePmbus(List<JstZcTarget> jztList, List resList, JSONObject jsonConInfo) {
+		int slaveId = Integer.parseInt(jsonConInfo.getString("slave"));
+		QwertMaster master = getQwertMaster(jsonConInfo);
+		String tmpInstruct=null;
+		short[] retmessage = null;
+		for (int i = 0; i < jztList.size(); i++) {
+			JstZcTarget jzt = jztList.get(i);
+			String instruct = jzt.getInstruct();
+			if(instruct.equals(tmpInstruct)){
+				String rm1 = jzt.getTargetNo();
+				String rm2 = jzt.getAddress();
+				String rm = null;
+				if(rm2.indexOf("$")!=-1){
+					String[] rm3=rm2.split("\\$");
+					rm=retmessage[Integer.parseInt(rm3[0])-1]+"";
+				}
+				resList.add(rm1+"="+rm);
+				continue;
+			}
+			String[] tmp = instruct.split("/");
+			try {
+				ReadDianzongRequest request = new ReadDianzongRequest(2.1f,3, Integer.parseInt(tmp[0]), Integer.parseInt(tmp[1]),Integer.parseInt(tmp[2]));
+				ReadDianzongResponse response = (ReadDianzongResponse) master.send(request);
+
+				if (response.isException())
+					System.out.println("Exception response: message=" + response.getExceptionMessage());
+				else{
+					System.out.println(Arrays.toString(response.getShortData()));
+		//			resList.add(Arrays.toString(response.getShortData()));
+					retmessage =  response.getShortData();
+					String rm1 = jzt.getTargetNo();
+					String rm2 = jzt.getAddress();
+					String rm = null;
+					if(rm2.indexOf("$")!=-1){
+						String[] rm3=rm2.split("\\$");
+						rm=retmessage[Integer.parseInt(rm3[0])-1]+"";
+					}
+					resList.add(rm1+"="+rm);
+					tmpInstruct = jzt.getInstruct();
+				}
+			}
+			catch (QudongTransportException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+	private void handleM7000D(List<JstZcTarget> jztList, List resList, JSONObject jsonConInfo) {
+		int slaveId = Integer.parseInt(jsonConInfo.getString("slave"));
+		QwertMaster master = getQwertMaster(jsonConInfo);
+		String tmpInstruct=null;
+		String retmessage=null;
+		for (int i = 0; i < jztList.size(); i++) {
+			JstZcTarget jzt = jztList.get(i);
+			String instruct = jzt.getInstruct();
+			if(instruct.equals(tmpInstruct)){
+				String rm1 = jzt.getTargetNo();
+				String rm2 = jzt.getAddress();
+				String rm = getM7000DString(retmessage, rm2);
+				resList.add(rm1+"="+rm);
+				continue;
+			}
+			try {
+				ReadM7000Request request = new ReadM7000Request(slaveId, 6);
+				ReadM7000Response response = (ReadM7000Response) master.send(request);
+
+				if (response.isException())
+					System.out.println("Exception response: message=" + response.getExceptionMessage());
+				else{
+					retmessage =  response.getBinData().substring(0,8);
+					String rm1 = jzt.getTargetNo();
+					String rm2 = jzt.getAddress();
+					String rm = getM7000DString(retmessage, rm2);
+					resList.add(rm1+"="+rm);
+					tmpInstruct = jzt.getInstruct();
+				}
+			}
+			catch (QudongTransportException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
+	@Nullable
+	private String getM7000DString(String retmessage, String rm2) {
+		String rm=null;
+		int pos=0;
+		if(rm2.indexOf(".")!=-1){
+			String[] rm3 = rm2.split("\\.");
+			pos=7-Integer.parseInt(rm3[1]);
+			rm=retmessage.substring(pos,pos+1);
+		}else{
+			rm=retmessage.substring(7,8);
+		}
+		return rm;
+	}
+
+	private void handlekStar(List<JstZcTarget> jztList, List resList, JSONObject jsonConInfo) {
+		int slaveId = Integer.parseInt(jsonConInfo.getString("slave"));
+		QwertMaster master = getQwertMaster(jsonConInfo);
+		String tmpInstruct=null;
+		String retmessage=null;
+		for (int i = 0; i < jztList.size(); i++) {
+			JstZcTarget jzt = jztList.get(i);
+			String instruct = jzt.getInstruct();
+			if(instruct.equals(tmpInstruct)){
+				String rm1 = jzt.getTargetNo();
+				String rm2 = jzt.getAddress();
+				String rm = getKstarString(retmessage, rm2);
+
+				resList.add(rm1+"="+rm);
+				continue;
+			}
+			try {
+				ReadKstarRequest request = new ReadKstarRequest(slaveId, 81,49);
+				ReadKstarResponse response = (ReadKstarResponse) master.send(request);
+
+				if (response.isException())
+					System.out.println("Exception response: message=" + response.getExceptionMessage());
+				else{
+					System.out.println(response.getMessage());
+					retmessage =  response.getMessage();
+					String rm1 = jzt.getTargetNo();
+					String rm2 = jzt.getAddress();
+					String rm = getKstarString(retmessage, rm2);
+					resList.add(rm1+"="+rm);
+					tmpInstruct = jzt.getInstruct();
+				}
+			}
+			catch (QudongTransportException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
+	@Nullable
+	private String getKstarString(String retmessage, String rm2) {
+		String rm = null;
+		if(rm2.indexOf("_")!=-1) {
+			String[] rm3 = rm2.split("_");
+			rm = retmessage.substring(Integer.parseInt(rm3[0]) - 1, Integer.parseInt(rm3[0]) + Integer.parseInt(rm3[1]) -1);
+		}
+		if(rm2.indexOf("$")!=-1) {
+			String[] rm3 = rm2.split("\\$");
+			int rm4 = Integer.parseInt(rm3[0]) - 1;
+			int rm5 = Integer.parseInt(rm3[0]) + Integer.parseInt(rm3[1]);
+			rm = retmessage.substring(Integer.parseInt(rm3[0]) - 1, Integer.parseInt(rm3[0]) + Integer.parseInt(rm3[1])-1);
+		}
+		return rm;
+	}
+
+	private void handleDelta(List<JstZcTarget> jztList, List resList, JSONObject jsonConInfo) {
+		int slaveId = Integer.parseInt(jsonConInfo.getString("slave"));
+		QwertMaster master = getQwertMaster(jsonConInfo);
+		String tmpInstruct=null;
+		String retmessage=null;
+		for (int i = 0; i < jztList.size(); i++) {
+			JstZcTarget jzt = jztList.get(i);
+			String instruct = jzt.getInstruct();
+			if(instruct.equals(tmpInstruct)){
+				String rm1 = jzt.getTargetNo();
+				String rm2 = jzt.getAddress();
+				String rm = retString(retmessage, rm2);
+				resList.add(rm1+"="+rm);
+				continue;
+			}
+			try {
+				ReadDeltaRequest request = new ReadDeltaRequest(slaveId, instruct);
+				ReadDeltaResponse response = (ReadDeltaResponse) master.send(request);
+
+				if (response.isException())
+					System.out.println("Exception response: message=" + response.getExceptionMessage());
+				else{
+	//				System.out.println(response.getMessage());
+					retmessage =  response.getMessage();
+					String rm1 = jzt.getTargetNo();
+					String rm2 = jzt.getAddress();
+					String rm = retString(retmessage, rm2);
+					resList.add(rm1+"="+rm);
+					tmpInstruct = jzt.getInstruct();
+				}
+			}
+			catch (QudongTransportException e) {
+				e.printStackTrace();
+			}
+
+		}
+		int rr=0;
+	}
+
+	private String retString(String retmessage, String rm2) {
+		int rn = rm2.lastIndexOf(",");
+		String rm3=rm2.substring(rn+1);
+		String rm4[]=rm3.split("\\)");
+		String rm5=rm4[0];
+		String[] rm6 = retmessage.split(";");
+		return rm6[Integer.parseInt(rm5)];
+	}
+
+	@Nullable
+	private QwertMaster getQwertMaster(JSONObject jsonConInfo) {
+		String type = jsonConInfo.getString("type");
+		org.jeecg.modules.qwert.conn.qudong.ip.IpParameters ipParameters = null;
+		if(type.equals("MODBUSTCP")) {
+			String ipAddress = jsonConInfo.getString("ipAddress");
+			String port = jsonConInfo.getString("port");
+			ipParameters = new org.jeecg.modules.qwert.conn.qudong.ip.IpParameters();
+			ipParameters.setHost(ipAddress);
+			ipParameters.setPort(Integer.parseInt(port));
+			ipParameters.setEncapsulated(true);
+		}
+		QwertFactory qwertFactory = new QwertFactory();
+		QwertMaster master=null;
+
+		if(type.equals("MODBUSTCP")) {
+			master = qwertFactory.createTcpMaster(ipParameters, false);
+		}
+		return master;
+	}
+
+	private void handleSnmp(List<JstZcTarget> jztList, List resList, JSONObject jsonConInfo) {
 		String version;
 		String timeOut;
 		String community;
+		String ipAddress=jsonConInfo.getString("ipAddress");
 		version = jsonConInfo.getString("version");
 		timeOut = jsonConInfo.getString("timeOut");
 		community = jsonConInfo.getString("community");
@@ -212,9 +449,10 @@ public class JstZcDevController extends JeecgController<JstZcDev, IJstZcDevServi
 				for(int j=0;j<snmpList.size();j++) {
 					resList.add(snmpList.get(j));
 				}
-			}else {
-				break;
 			}
+	//		else {
+	//			break;
+	//		}
 		}
 	}
 
@@ -241,11 +479,11 @@ public class JstZcDevController extends JeecgController<JstZcDev, IJstZcDevServi
 			String commPortId = jsonConInfo.getString("com");
 			int baudRate = Integer.parseInt(jsonConInfo.getString("baudRate"));
 			int flowControlIn = 0;
-			int flowControlOut = 0; 
+			int flowControlOut = 0;
 			int dataBits = Integer.parseInt(jsonConInfo.getString("dataBits"));
 			int stopBits = Integer.parseInt(jsonConInfo.getString("stopBits"));
 			int parity = Integer.parseInt(jsonConInfo.getString("parity"));
-			
+
 			wrapper = new TestSerialPortWrapper(commPortId, baudRate, flowControlIn, flowControlOut, dataBits, stopBits, parity);
 		}
 		IpParameters ipParameters = null;
@@ -361,7 +599,7 @@ public class JstZcDevController extends JeecgController<JstZcDev, IJstZcDevServi
 			master.destroy();
 		}
 	}
-	
+
 //	@AutoLog(value = "jst_zc_dev-读取")
 	@ApiOperation(value = "jst_zc_dev-读取", notes = "jst_zc_dev-读取")
 	@GetMapping(value = "/readClose")

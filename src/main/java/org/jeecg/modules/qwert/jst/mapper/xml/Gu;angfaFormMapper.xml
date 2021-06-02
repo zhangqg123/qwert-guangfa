@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.jeecg.modules.qwert.jst.mapper.GuanfaFormMapper">
+	<resultMap id="GuangfaBranch" type="org.jeecg.modules.qwert.jst.entity.GuangfaBranch">
+	   <!-- result属性映射非匹配字段 -->
+	</resultMap>
+	<select id="queryGfBranch" parameterType="Object"  resultMap="GuangfaBranch">
+		select tagname,pv,time from (select tagname,pv,time from gf_ac order by time desc limit 10000) as t1 group by t1.tagname
+		union all
+		select tagname,pv,time from (select tagname,pv,time from gf_th order by time desc limit 10000) as t2 group by t2.tagname
+		union all
+		select tagname,pv,time from (select tagname,pv,time from gf_ups order by time desc limit 10000) as t3 group by t3.tagname
+	</select>
+</mapper>
