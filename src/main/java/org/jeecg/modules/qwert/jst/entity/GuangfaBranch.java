@@ -13,6 +13,8 @@ import java.io.Serializable;
 @Data
 public class GuangfaBranch implements Serializable {
     private static final long serialVersionUID = 1L;
+    private String devNo;
+    private String targetName;
     private String tagName;
     private String pv;
     private String time;

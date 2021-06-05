@@ -30,10 +30,30 @@
 			select * from jst_zc_target where dev_type in (select origin_id from jst_zc_cat where org_user=#{orgUser})
 	</select>
 	<select id="queryGfBranch" parameterType="Object"  resultMap="GuangfaBranch">
-		select tagname,pv,time from (select tagname,pv,time from gf_ac order by time desc limit 10000) as t1 group by t1.tagname
+		select tagname,pv,time from (select tagname,pv,time from gfac order by time desc limit 10000) as t1 group by t1.tagname
 		union all
-		select tagname,pv,time from (select tagname,pv,time from gf_th order by time desc limit 10000) as t2 group by t2.tagname
+		select tagname,pv,time from (select tagname,pv,time from gfwsd order by time desc limit 10000) as t2 group by t2.tagname
 		union all
-		select tagname,pv,time from (select tagname,pv,time from gf_ups order by time desc limit 10000) as t3 group by t3.tagname
+		select tagname,pv,time from (select tagname,pv,time from gfups order by time desc limit 10000) as t3 group by t3.tagname
+		union all
+		select tagname,pv,time from (select tagname,pv,time from gfdly order by time desc limit 10000) as t4 group by t4.tagname
+	</select>
+	<select id="queryGfTarget" parameterType="Object"  resultMap="GuangfaBranch">
+		select gc.dev_no,gc.target_name,gf.tagname,gf.pv,gf.time from
+		 (select tagname,pv,time from
+		  (select tagname,pv,time from
+		  ${from}
+		  	order by time desc limit 10000) as t1
+		   group by t1.tagname) gf left join gfcategory gc on gf.tagname=gc.target_no
+		   where gc.dev_no is not null and gc.dev_no=#{dev_no}
+	</select>
+	<select id="queryGfPageByFromDevNo" parameterType="Object"  resultMap="GuangfaBranch">
+		select gc.dev_no,gc.target_name,gf.tagname,gf.pv,gf.time from
+		 (select tagname,pv,time from
+		  (select tagname,pv,time from
+		  ${from}
+		  	order by time desc limit 10000) as t1
+		   group by t1.tagname) gf left join gfcategory gc on gf.tagname=gc.target_no
+		   where gc.dev_no is not null and gc.dev_no=#{dev_no}
 	</select>
 </mapper>

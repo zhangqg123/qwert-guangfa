@@ -27,4 +27,7 @@ public interface JstZcTargetMapper extends BaseMapper<JstZcTarget> {
 	public List<JstZcTarget> queryJztPageByOrgUser(Page<JstZcTarget> page,@Param("orgUser") String orgUser);
 
 	List<GuangfaBranch> queryGfBranch();
+	List<GuangfaBranch> queryGfTarget(@Param("from") String from,@Param("dev_no") String dev_no);
+
+	List<GuangfaBranch> queryGfPageByFromDevNo(Page<GuangfaBranch> page,@Param("from") String from,@Param("dev_no") String dev_no);
 }

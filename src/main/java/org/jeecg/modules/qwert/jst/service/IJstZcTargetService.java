@@ -23,6 +23,9 @@ public interface IJstZcTargetService extends IService<JstZcTarget> {
 	public List<JstZcTarget> queryJztList5(String dev_no);
 	public boolean edit(JstZcTarget jstZcTarget);
 	Page<JstZcTarget> queryJztPageByOrgUser(Page<JstZcTarget> page, String orgUser);
+	Page<GuangfaBranch> queryGfPageByFromDevNo(Page<GuangfaBranch> page, String from,String dev_no);
 
     List<GuangfaBranch> queryGfBranch();
+
+    List<GuangfaBranch> queryGfTarget(String from, String dev_no);
 }

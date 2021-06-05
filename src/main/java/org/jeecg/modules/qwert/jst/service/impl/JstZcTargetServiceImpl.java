@@ -4,20 +4,13 @@ import java.util.List;
 
 import javax.annotation.Resource;
 
-import org.jeecg.common.constant.CacheConstant;
-import org.jeecg.common.system.query.QueryGenerator;
 import org.jeecg.modules.qwert.jst.entity.GuangfaBranch;
-import org.jeecg.modules.qwert.jst.entity.JstZcCat;
 import org.jeecg.modules.qwert.jst.entity.JstZcTarget;
 import org.jeecg.modules.qwert.jst.entity.JstZcTarget2;
-import org.jeecg.modules.qwert.jst.mapper.JstZcDevMapper;
 import org.jeecg.modules.qwert.jst.mapper.JstZcTargetMapper;
 import org.jeecg.modules.qwert.jst.service.IJstZcTargetService;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 
@@ -72,8 +65,20 @@ public class JstZcTargetServiceImpl extends ServiceImpl<JstZcTargetMapper, JstZc
 	}
 
 	@Override
+	public Page<GuangfaBranch> queryGfPageByFromDevNo(Page<GuangfaBranch> page, String from,String dev_no) {
+		List<GuangfaBranch> tmp = jstZcTargetMapper.queryGfPageByFromDevNo(page, from, dev_no);
+		return page.setRecords(jstZcTargetMapper.queryGfPageByFromDevNo(page, from,dev_no));
+	}
+
+	@Override
 	public List<GuangfaBranch> queryGfBranch() {
 		List<GuangfaBranch> pvList = this.jstZcTargetMapper.queryGfBranch();
+		return pvList;
+	}
+
+	@Override
+	public List<GuangfaBranch> queryGfTarget(String from, String dev_no) {
+		List<GuangfaBranch> pvList = this.jstZcTargetMapper.queryGfTarget(from,dev_no);
 		return pvList;
 	}
 
