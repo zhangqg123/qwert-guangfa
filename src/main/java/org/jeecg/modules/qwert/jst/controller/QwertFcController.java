@@ -77,7 +77,7 @@ public class QwertFcController extends JeecgController<QwertFc, IQwertFcService>
 		if(from.equals("dl")&&dev_no.toUpperCase().indexOf("AC")!=-1){
 			from="gfac";
 		}
-		if(from.equals("dl")&&dev_no.toUpperCase().indexOf("TH")!=-1){
+		if(from.equals("dl")&&(dev_no.toUpperCase().indexOf("TH")!=-1||dev_no.toUpperCase().indexOf("WDB")!=-1||dev_no.toUpperCase().indexOf("DLS")!=-1)){
 			from="gfwsd";
 		}
 		if(from.equals("dl")&&dev_no.toUpperCase().indexOf("UPS")!=-1){
@@ -88,6 +88,22 @@ public class QwertFcController extends JeecgController<QwertFc, IQwertFcService>
 		}
 		if(from.equals("dl")&&dev_no.toUpperCase().indexOf("KG")!=-1){
 			from="gfkg";
+		}
+		if(code.indexOf("zhk")!=-1){
+			from="gfzhksd";
+			dev_no=code.substring(3);
+		}
+		if(code.indexOf("zht")!=-1){
+			from="gfzhtd";
+			dev_no=code.substring(3);
+		}
+		if(code.indexOf("ykq")!=-1){
+			from="ykfh";
+			dev_no=code.substring(3);
+		}
+		if(code.indexOf("ddfh")!=-1){
+			from="ddfh";
+			dev_no=code.substring(4);
 		}
 
 		Result<Page<GuangfaBranch>> result = new Result<Page<GuangfaBranch>>();
