@@ -2,6 +2,7 @@ package org.jeecg.modules.qwert.conn.qudong.sero.messaging;
 
 import java.io.IOException;
 
+import org.jeecg.modules.qwert.conn.qudong.msg.QwertMessage;
 import org.jeecg.modules.qwert.conn.qudong.sero.io.StreamUtils;
 import org.jeecg.modules.qwert.conn.qudong.sero.log.BaseIOLog;
 import org.jeecg.modules.qwert.conn.qudong.sero.timer.SystemTimeSource;
@@ -22,7 +23,7 @@ import org.jeecg.modules.qwert.conn.qudong.sero.util.queue.ByteQueue;
 public class MessageControl implements DataConsumer {
     private static int DEFAULT_RETRIES = 2;
     private static int DEFAULT_TIMEOUT = 500;
-
+    private byte sid=0;
     public boolean DEBUG = true;
 
     private Transport transport;
@@ -40,6 +41,7 @@ public class MessageControl implements DataConsumer {
 
     private final WaitingRoom waitingRoom = new WaitingRoom();
     private final ByteQueue dataBuffer = new ByteQueue();
+    private String sid7000;
 
     /**
      * <p>start.</p>
@@ -191,6 +193,10 @@ public class MessageControl implements DataConsumer {
      */
     public IncomingResponseMessage send(OutgoingRequestMessage request, int timeout, int retries) throws IOException {
         byte[] data = request.getMessageData2(1);
+//        if(data[0]==36&&data[data.length-1]==13){
+//            sid7000= (char)data[1]+""+(char)data[2];
+//        }
+
   //      byte[] data = request.getMessageData();
 	//	String putIn = "~210360470000fda9\r\n";
 //    		String putIn= "~00P003STB"; //台达
@@ -245,8 +251,8 @@ public class MessageControl implements DataConsumer {
      * @throws java.io.IOException if any.
      */
     public void send(OutgoingResponseMessage response) throws IOException {
-		String putIn = "~21036000d03000d201f40014003200000000012c0096032000c800e60078f3f3\r";
-//        String putIn = "!9E0000\r"; //M7000d
+	//	String putIn = "~21036000d03000d201f40014003200000000012c0096032000c800e60078f3f3\r";
+        String putIn = "!9E0000\r"; //M7000d
 //        String putIn = "(208.4 140.0 208.4 034 59.9 2.05 35.0 00110000\r"; //科士达
 //        String putIn = "~00D0250;0;1;;;000;2740;;029;100";//台达
 		byte[] data=putIn.toUpperCase().getBytes();
@@ -264,7 +270,6 @@ public class MessageControl implements DataConsumer {
             System.out.println("MessagingConnection.read: " + StreamUtils.dumpHex(b, 0, len));
         if (ioLog != null)
             ioLog.input(b, 0, len);
-
         if (discardDataDelay > 0) {
             long now = timeSource.currentTimeMillis();
             if (now - lastDataTimestamp > discardDataDelay)
@@ -300,9 +305,10 @@ public class MessageControl implements DataConsumer {
                             send(response);
                     }
                 }
-                else
+                else{
                     // Must be a response. Give it to the waiting room.
                     waitingRoom.response((IncomingResponseMessage) message);
+                }
             }
             catch (Exception e) {
                 exceptionHandler.receivedException(e);

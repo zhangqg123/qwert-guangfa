@@ -2,6 +2,8 @@ package org.jeecg.modules.qwert.conn.qudong.ip.encap;
 
 import org.jeecg.modules.qwert.conn.qudong.ip.IpMessage;
 import org.jeecg.modules.qwert.conn.qudong.msg.QwertMessage;
+import org.jeecg.modules.qwert.conn.qudong.msg.ReadM7000Request;
+import org.jeecg.modules.qwert.conn.qudong.msg.ReadM7000Response;
 import org.jeecg.modules.qwert.conn.qudong.sero.messaging.IncomingResponseMessage;
 import org.jeecg.modules.qwert.conn.qudong.sero.messaging.OutgoingRequestMessage;
 import org.jeecg.modules.qwert.conn.qudong.sero.messaging.WaitingRoomKey;
@@ -14,6 +16,7 @@ import org.jeecg.modules.qwert.conn.qudong.sero.messaging.WaitingRoomKeyFactory;
  * @version 5.0.0
  */
 public class EncapWaitingRoomKeyFactory implements WaitingRoomKeyFactory {
+    private int sid7000D=0;
     /** {@inheritDoc} */
     @Override
     public WaitingRoomKey createWaitingRoomKey(OutgoingRequestMessage request) {
@@ -33,7 +36,16 @@ public class EncapWaitingRoomKeyFactory implements WaitingRoomKeyFactory {
      * @return a {@link org.jeecg.modules.qwert.conn.qudong.sero.messaging.WaitingRoomKey} object.
      */
     public WaitingRoomKey createWaitingRoomKey(QwertMessage msg) {
-        return new EncapWaitingRoomKey(msg.getSlaveId(), msg.getFunctionCode());
+        int slaveId = msg.getSlaveId();
+        if(msg instanceof ReadM7000Request){
+            sid7000D=msg.getSlaveId();
+        }
+        if(msg instanceof ReadM7000Response){
+            slaveId=sid7000D;
+            sid7000D=0;
+        }
+
+        return new EncapWaitingRoomKey(slaveId, msg.getFunctionCode());
     }
 
     class EncapWaitingRoomKey implements WaitingRoomKey {

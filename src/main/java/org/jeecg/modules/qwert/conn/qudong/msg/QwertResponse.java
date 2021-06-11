@@ -72,7 +72,7 @@ abstract public class QwertResponse extends QwertMessage {
         }else if (code == QwertAsciiUtils.M7000_RETURN_START) {
         	functionCode = FunctionCode.READ_M7000_REGISTERS;
         	queue=QwertAsciiUtils.getM7000ReturnMessage(queue);
-            slaveId = 1;
+            slaveId = 0;
         }else if (code == QwertAsciiUtils.KSTAR_RETURN_START) {
             functionCode = FunctionCode.READ_KSTAR_REGISTERS;
             msg=QwertAsciiUtils.getKstarReturnMessage(queue);

@@ -372,7 +372,7 @@ public class JstZcJobServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
 					}
 					Thread.sleep(sleeptime/2);
 				}
-	/*			if (batchSend == true && alarmFlag==false) {
+				if (batchSend == true && alarmFlag==false) {
 					results = master.send(batch);
 					Thread.sleep(sleeptime);
 
@@ -402,8 +402,8 @@ public class JstZcJobServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
 					if(JstConstant.debugflag==1) {
 						System.out.println(devNo+"::"+resList.size());
 					}
-				}*/
-				resList.add("{gf10001x0010=12345}");
+				}
+			//	resList.add("{gf10001x0010=12345}");
 
 				String alarm=null;
 				if(resList.size()>0) {

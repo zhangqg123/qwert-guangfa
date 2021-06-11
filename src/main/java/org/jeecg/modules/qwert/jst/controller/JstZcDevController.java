@@ -215,7 +215,7 @@ public class JstZcDevController extends JeecgController<JstZcDev, IJstZcDevServi
 		int slaveId = Integer.parseInt(jsonConInfo.getString("slave"));
 		QwertMaster master = getQwertMaster(jsonConInfo);
 		String tmpInstruct=null;
-		short[] retmessage = null;
+		byte[] retmessage = null;
 		for (int i = 0; i < jztList.size(); i++) {
 			JstZcTarget jzt = jztList.get(i);
 			String instruct = jzt.getInstruct();
@@ -232,7 +232,7 @@ public class JstZcDevController extends JeecgController<JstZcDev, IJstZcDevServi
 			}
 			String[] tmp = instruct.split("/");
 			try {
-				ReadDianzongRequest request = new ReadDianzongRequest(2.1f,3, Integer.parseInt(tmp[0]), Integer.parseInt(tmp[1]),Integer.parseInt(tmp[2]));
+				ReadDianzongRequest request = new ReadDianzongRequest(2.0f,slaveId, Integer.parseInt(tmp[0]), Integer.parseInt(tmp[1]),Integer.parseInt(tmp[2]));
 				ReadDianzongResponse response = (ReadDianzongResponse) master.send(request);
 
 				if (response.isException())
@@ -240,21 +240,26 @@ public class JstZcDevController extends JeecgController<JstZcDev, IJstZcDevServi
 				else{
 					System.out.println(Arrays.toString(response.getShortData()));
 		//			resList.add(Arrays.toString(response.getShortData()));
-					retmessage =  response.getShortData();
+					retmessage =  response.getRetData();
 					String rm1 = jzt.getTargetNo();
 					String rm2 = jzt.getAddress();
-					String rm = null;
+					int rm = 0;
+					if(rm2.indexOf("_")!=-1){
+						String[] rm3=rm2.split("_");
+						byte trm = retmessage[Integer.parseInt(rm3[0])] ;
+						rm=trm & 0xff;
+					}
 					if(rm2.indexOf("$")!=-1){
 						String[] rm3=rm2.split("\\$");
-						rm=retmessage[Integer.parseInt(rm3[0])-1]+"";
+						rm=retmessage[Integer.parseInt(rm3[0])-1];
 					}
 					resList.add(rm1+"="+rm);
-					tmpInstruct = jzt.getInstruct();
 				}
 			}
 			catch (QudongTransportException e) {
 				e.printStackTrace();
 			}
+			tmpInstruct = jzt.getInstruct();
 		}
 	}
 	private void handleM7000D(List<JstZcTarget> jztList, List resList, JSONObject jsonConInfo) {
@@ -282,14 +287,15 @@ public class JstZcDevController extends JeecgController<JstZcDev, IJstZcDevServi
 					retmessage =  response.getBinData().substring(0,8);
 					String rm1 = jzt.getTargetNo();
 					String rm2 = jzt.getAddress();
+					// 不清楚应该是低位在前，高位在前
 					String rm = getM7000DString(retmessage, rm2);
 					resList.add(rm1+"="+rm);
-					tmpInstruct = jzt.getInstruct();
 				}
 			}
 			catch (QudongTransportException e) {
 				e.printStackTrace();
 			}
+			tmpInstruct = jzt.getInstruct();
 		}
 	}
 
@@ -336,12 +342,12 @@ public class JstZcDevController extends JeecgController<JstZcDev, IJstZcDevServi
 					String rm2 = jzt.getAddress();
 					String rm = getKstarString(retmessage, rm2);
 					resList.add(rm1+"="+rm);
-					tmpInstruct = jzt.getInstruct();
 				}
 			}
 			catch (QudongTransportException e) {
 				e.printStackTrace();
 			}
+			tmpInstruct = jzt.getInstruct();
 		}
 	}
 
@@ -389,13 +395,12 @@ public class JstZcDevController extends JeecgController<JstZcDev, IJstZcDevServi
 					String rm2 = jzt.getAddress();
 					String rm = retString(retmessage, rm2);
 					resList.add(rm1+"="+rm);
-					tmpInstruct = jzt.getInstruct();
 				}
 			}
 			catch (QudongTransportException e) {
 				e.printStackTrace();
 			}
-
+			tmpInstruct = jzt.getInstruct();
 		}
 		int rr=0;
 	}
@@ -474,6 +479,11 @@ public class JstZcDevController extends JeecgController<JstZcDev, IJstZcDevServi
 			bn=Integer.parseInt(bitNumber);
 		}
 		timeOut = jsonConInfo.getString("timeOut");
+		String stime = jsonConInfo.getString("sleeptime");
+		int sleeptime=JstConstant.sleeptime;
+		if(stime!=null && !stime.equals("")) {
+			sleeptime=Integer.parseInt(stime);
+		}
 		TestSerialPortWrapper wrapper = null;
 		if(type.equals("MODBUSRTU")||type.equals("MODBUSASCII")) {
 			String commPortId = jsonConInfo.getString("com");
@@ -526,6 +536,10 @@ public class JstZcDevController extends JeecgController<JstZcDev, IJstZcDevServi
 					tas = ta.split("\\.");
 					ta=tas[0];
 				}
+				if(ta!=null&&ta.indexOf("(")!=-1){
+					tas = ta.split("\\(");
+					ta=tas[0];
+				}
 				if(jzt.getAddressType()!=null && jzt.getAddressType().equals("HEX")){
 					offset = Integer.parseInt(ta,16);
 				}else{
@@ -543,7 +557,7 @@ public class JstZcDevController extends JeecgController<JstZcDev, IJstZcDevServi
 				if (flag == true) {
 			//		System.out.println(i + "::" + offset);
 					results = master.send(batch);
-					Thread.sleep(JstConstant.sleeptime);
+					Thread.sleep(sleeptime);
 					if(!results.toString().equals("{}")) {
 						resList.add(results.toString());
 					}
@@ -573,11 +587,11 @@ public class JstZcDevController extends JeecgController<JstZcDev, IJstZcDevServi
 					batch.addLocator(jzt.getId(), BaseLocator.inputStatus(slaveId, offset));
 					batchSend = true;
 				}
-				Thread.sleep(JstConstant.sleeptime/2);
+				Thread.sleep(sleeptime/2);
 			}
 			if (batchSend == true) {
 				results = master.send(batch);
-				Thread.sleep(JstConstant.sleeptime);
+				Thread.sleep(sleeptime);
 				if(JstConstant.debugflag==1) {
 					System.out.println(results);
 				}

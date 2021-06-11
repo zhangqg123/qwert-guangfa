@@ -681,22 +681,7 @@ public class JstZcDevServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
 		            		        List<JstZcTarget> jztc = jztCollect.stream().filter(u -> tmpaddress.equals(u.getAddress())).collect(Collectors.toList());
 
 		                            for(int n=0;n<jztc.size();n++){
-		/*                       //     	if((rk+n+1)>jztCollect.size()) {
-			                           	if((n+1)>jztCollect.size()) {
-		                            		break;
-		                            	}
-//		                                JstZcTarget item = jztCollect.get(rk+n);
-		                                if(!item.getInstruct().equals(tmpinstruct)){
-		                                    break;
-		                                };
-		                                if(!item.getAddress().equals(tmpaddress)){
-		                                    break;
-		                                };
-	*/
 		                                JstZcTarget item = jztc.get(n);
-
-		                           //     String aa = Integer.toBinaryString(Integer.parseInt(r3[1]));
-		                           //     String a0=String.format("%16d", Integer.parseInt(aa)).replace(" ", "0");
 		                                if(item.getAlarmPoint()==null||item.getAlarmPoint().equals("")||item.getAlarmPoint().equals("0")) {
 		                                	continue;
 		                                }
@@ -724,10 +709,6 @@ public class JstZcDevServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
 		                                String a6 = binaryStr.substring(a5,a5+1);
 		                                
 										String bjz = item.getCtrlUp();
-				//						if(item.getId().equals("5800")) {
-				//							int aaa=2;
-				//							int ddd=aaa;
-				//						}
 										if(bjz.indexOf("==")!=-1) {
 											String[] bj = bjz.split("==");
 											if(a6.equals(bj[1])) {

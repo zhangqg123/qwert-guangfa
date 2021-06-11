@@ -85,5 +85,7 @@ public class EncapMessage extends IpMessage {
         }
         return ret;
     }
-    
+    public int getSlaveId(){
+        return qwertMessage.getSlaveId();
+    }
 }

@@ -36,15 +36,15 @@ import org.jeecg.modules.qwert.conn.modbus4j.source.msg.WriteRegistersResponse;
 public class MasterTest {
     public static void main(String[] args) throws Exception {
 
-/*    	String commPortId = "COM4";
+    	String commPortId = "COM1";
     	int baudRate = 9600;
     	int flowControlIn = 0;
 		int flowControlOut = 0; 
 		int dataBits = 8;
 		int stopBits = 1;
 		int parity = 0;
-*/   	
-//    	TestSerialPortWrapper wrapper = new TestSerialPortWrapper(commPortId, baudRate, flowControlIn, flowControlOut, dataBits, stopBits, parity);
+
+    	TestSerialPortWrapper wrapper = new TestSerialPortWrapper(commPortId, baudRate, flowControlIn, flowControlOut, dataBits, stopBits, parity);
         
         IpParameters ipParameters = new IpParameters();
         ipParameters.setHost("127.0.0.1");
@@ -53,9 +53,9 @@ public class MasterTest {
 
         ModbusFactory modbusFactory = new ModbusFactory();
 
-   //     ModbusMaster master = modbusFactory.createRtuMaster(wrapper);
+        ModbusMaster master = modbusFactory.createRtuMaster(wrapper);
         // ModbusMaster master = modbusFactory.createAsciiMaster(wrapper);
-        ModbusMaster master = modbusFactory.createTcpMaster(ipParameters, false);
+  //      ModbusMaster master = modbusFactory.createTcpMaster(ipParameters, false);
         // ModbusMaster master = modbusFactory.createUdpMaster(ipParameters);
 
         try {
@@ -68,7 +68,7 @@ public class MasterTest {
             // readDiscreteInputTest(master, slaveId, 449, 72);
             // readHoldingRegistersTest(master, slaveId, 9, 125);
             // readHoldingRegistersTest(master, slaveId, 9, 120);
-            // readInputRegistersTest(master, slaveId, 0, 1);
+            readInputRegistersTest(master, slaveId, 2, 1);
             // readInputRegistersTest(master, slaveId, 14, 8);
             // writeCoilTest(master, slaveId, 1, true);
             // writeCoilTest(master, slaveId, 110, true);
@@ -111,7 +111,7 @@ public class MasterTest {
             // master.setValue(locator, false);
             // System.out.println(master.getValue(locator));
 
-             BatchRead<String> batch = new BatchRead<String>();
+      //       BatchRead<String> batch = new BatchRead<String>();
             // batch.addLocator("0-1 sb true", BaseLocator.holdingRegisterBit(slaveId, 0, 1));
             // batch.addLocator("1-1 sb false", BaseLocator.holdingRegisterBit(slaveId, 1, 1));
 
@@ -162,12 +162,11 @@ public class MasterTest {
                      BaseLocator.inputRegister(slaveId, 2346, DataType.FOUR_BYTE_FLOAT));
              batch.addLocator("hr4",
                      BaseLocator.inputRegister(slaveId, 2352, DataType.FOUR_BYTE_FLOAT));
-*/
-            batch.addLocator("hr5",
+             batch.addLocator("hr5",
                      BaseLocator.holdingRegister(slaveId, 22, DataType.TWO_BYTE_INT_UNSIGNED));
              batch.addLocator("hr6",
                      BaseLocator.holdingRegister(slaveId, 23, DataType.TWO_BYTE_INT_UNSIGNED));
-/*             batch.addLocator("hr7",
+             batch.addLocator("hr7",
                      BaseLocator.holdingRegister(slaveId, 3203, DataType.TWO_BYTE_INT_UNSIGNED));
              batch.addLocator("hr8",
                      BaseLocator.holdingRegister(slaveId, 3204, DataType.TWO_BYTE_INT_UNSIGNED));
@@ -176,10 +175,10 @@ public class MasterTest {
              batch.addLocator("hr10",
                      BaseLocator.holdingRegister(slaveId, 3206, DataType.TWO_BYTE_INT_UNSIGNED));
 */
-             BatchResults<String> results = master.send(batch);
-             System.out.println(results);
-             System.out.println(results.getValue("hr5"));
-             System.out.println(results.getValue("hr6"));
+//             BatchResults<String> results = master.send(batch);
+//             System.out.println(results);
+//             System.out.println(results.getValue("hr5"));
+//             System.out.println(results.getValue("hr6"));
 //             System.out.println(results.getValue("hr3"));
 //             System.out.println(results.getValue("hr4"));
 

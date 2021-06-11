@@ -43,6 +43,13 @@ public class QwertUtils {
     //    public static final int MAX_READ_REGISTER_COUNT = 125;
     //    public static final int MAX_WRITE_REGISTER_COUNT = 120;
 
+    public static byte hex2byte(String hexStr) {
+        char[] chars = hexStr.toCharArray();
+        byte tmpbyte = (byte) Integer.parseInt(String.valueOf(new char[]{chars[0], chars[1]}), 16);
+        return tmpbyte;
+    }
+
+
     /**
      * <p>pushByte.</p>
      *
