@@ -25,6 +25,7 @@ import org.jeecg.common.util.DateUtils;
 import org.jeecg.modules.qwert.conn.modbus4j.test.TestSerialPortWrapper;
 import org.jeecg.modules.qwert.conn.qudong.QwertFactory;
 import org.jeecg.modules.qwert.conn.qudong.QwertMaster;
+import org.jeecg.modules.qwert.conn.qudong.base.QudongUtils;
 import org.jeecg.modules.qwert.conn.qudong.exception.QudongTransportException;
 import org.jeecg.modules.qwert.conn.qudong.msg.ReadDianzongRequest;
 import org.jeecg.modules.qwert.conn.qudong.msg.ReadDianzongResponse;
@@ -213,7 +214,7 @@ public class JstZcDevController extends JeecgController<JstZcDev, IJstZcDevServi
 
 	private void handlePmbus(List<JstZcTarget> jztList, List resList, JSONObject jsonConInfo) {
 		int slaveId = Integer.parseInt(jsonConInfo.getString("slave"));
-		QwertMaster master = getQwertMaster(jsonConInfo);
+		QwertMaster master = QudongUtils.getQwertMaster(jsonConInfo);
 		String tmpInstruct=null;
 		byte[] retmessage = null;
 		for (int i = 0; i < jztList.size(); i++) {
@@ -264,7 +265,7 @@ public class JstZcDevController extends JeecgController<JstZcDev, IJstZcDevServi
 	}
 	private void handleM7000D(List<JstZcTarget> jztList, List resList, JSONObject jsonConInfo) {
 		int slaveId = Integer.parseInt(jsonConInfo.getString("slave"));
-		QwertMaster master = getQwertMaster(jsonConInfo);
+		QwertMaster master = QudongUtils.getQwertMaster(jsonConInfo);
 		String tmpInstruct=null;
 		String retmessage=null;
 		for (int i = 0; i < jztList.size(); i++) {
@@ -273,7 +274,7 @@ public class JstZcDevController extends JeecgController<JstZcDev, IJstZcDevServi
 			if(instruct.equals(tmpInstruct)){
 				String rm1 = jzt.getTargetNo();
 				String rm2 = jzt.getAddress();
-				String rm = getM7000DString(retmessage, rm2);
+				String rm = QudongUtils.getM7000DString(retmessage, rm2);
 				resList.add(rm1+"="+rm);
 				continue;
 			}
@@ -288,7 +289,7 @@ public class JstZcDevController extends JeecgController<JstZcDev, IJstZcDevServi
 					String rm1 = jzt.getTargetNo();
 					String rm2 = jzt.getAddress();
 					// 不清楚应该是低位在前，高位在前
-					String rm = getM7000DString(retmessage, rm2);
+					String rm = QudongUtils.getM7000DString(retmessage, rm2);
 					resList.add(rm1+"="+rm);
 				}
 			}
@@ -299,23 +300,10 @@ public class JstZcDevController extends JeecgController<JstZcDev, IJstZcDevServi
 		}
 	}
 
-	@Nullable
-	private String getM7000DString(String retmessage, String rm2) {
-		String rm=null;
-		int pos=0;
-		if(rm2.indexOf(".")!=-1){
-			String[] rm3 = rm2.split("\\.");
-			pos=7-Integer.parseInt(rm3[1]);
-			rm=retmessage.substring(pos,pos+1);
-		}else{
-			rm=retmessage.substring(7,8);
-		}
-		return rm;
-	}
 
 	private void handlekStar(List<JstZcTarget> jztList, List resList, JSONObject jsonConInfo) {
 		int slaveId = Integer.parseInt(jsonConInfo.getString("slave"));
-		QwertMaster master = getQwertMaster(jsonConInfo);
+		QwertMaster master = QudongUtils.getQwertMaster(jsonConInfo);
 		String tmpInstruct=null;
 		String retmessage=null;
 		for (int i = 0; i < jztList.size(); i++) {
@@ -369,7 +357,7 @@ public class JstZcDevController extends JeecgController<JstZcDev, IJstZcDevServi
 
 	private void handleDelta(List<JstZcTarget> jztList, List resList, JSONObject jsonConInfo) {
 		int slaveId = Integer.parseInt(jsonConInfo.getString("slave"));
-		QwertMaster master = getQwertMaster(jsonConInfo);
+		QwertMaster master = QudongUtils.getQwertMaster(jsonConInfo);
 		String tmpInstruct=null;
 		String retmessage=null;
 		for (int i = 0; i < jztList.size(); i++) {
@@ -414,26 +402,6 @@ public class JstZcDevController extends JeecgController<JstZcDev, IJstZcDevServi
 		return rm6[Integer.parseInt(rm5)];
 	}
 
-	@Nullable
-	private QwertMaster getQwertMaster(JSONObject jsonConInfo) {
-		String type = jsonConInfo.getString("type");
-		org.jeecg.modules.qwert.conn.qudong.ip.IpParameters ipParameters = null;
-		if(type.equals("MODBUSTCP")) {
-			String ipAddress = jsonConInfo.getString("ipAddress");
-			String port = jsonConInfo.getString("port");
-			ipParameters = new org.jeecg.modules.qwert.conn.qudong.ip.IpParameters();
-			ipParameters.setHost(ipAddress);
-			ipParameters.setPort(Integer.parseInt(port));
-			ipParameters.setEncapsulated(true);
-		}
-		QwertFactory qwertFactory = new QwertFactory();
-		QwertMaster master=null;
-
-		if(type.equals("MODBUSTCP")) {
-			master = qwertFactory.createTcpMaster(ipParameters, false);
-		}
-		return master;
-	}
 
 	private void handleSnmp(List<JstZcTarget> jztList, List resList, JSONObject jsonConInfo) {
 		String version;

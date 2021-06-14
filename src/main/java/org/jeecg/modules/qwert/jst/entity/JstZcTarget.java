@@ -80,6 +80,27 @@ public class JstZcTarget implements Serializable {
     @Excel(name = "指令", width = 15)
     @ApiModelProperty(value = "指令")
     private java.lang.String instruct;
+
+	@Excel(name = "事件0到1", width = 15)
+	@ApiModelProperty(value = "事件0到1")
+	private java.lang.String evt01;
+	@Excel(name = "事件1到0", width = 15)
+	@ApiModelProperty(value = "事件1到0")
+	private java.lang.String evt10;
+
+	@Excel(name = "报警低限", width = 15)
+	@ApiModelProperty(value = "报警低限")
+	private java.lang.Integer valMin;
+	@Excel(name = "恢复低限", width = 15)
+	@ApiModelProperty(value = "恢复低限")
+	private java.lang.Integer restoreMin;
+	@Excel(name = "恢复高限", width = 15)
+	@ApiModelProperty(value = "恢复高限")
+	private java.lang.Integer restoreMax;
+	@Excel(name = "报警高限", width = 15)
+	@ApiModelProperty(value = "报警高限")
+	private java.lang.Integer valMax;
+
 	/**采集时间*/
 	@Excel(name = "采集时间", width = 15)
     @ApiModelProperty(value = "采集时间")

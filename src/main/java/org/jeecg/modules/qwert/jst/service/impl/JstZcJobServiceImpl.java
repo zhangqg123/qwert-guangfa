@@ -5,6 +5,10 @@ import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.fusesource.stomp.jms.StompJmsConnectionFactory;
 import org.fusesource.stomp.jms.StompJmsDestination;
+import org.jeecg.common.constant.CommonConstant;
+import org.jeecg.common.system.util.JwtUtil;
+import org.jeecg.common.util.DateUtils;
+import org.jeecg.common.util.RedisUtil;
 import org.jeecg.modules.qwert.conn.dbconn.mongo.common.model.Alarm;
 import org.jeecg.modules.qwert.conn.dbconn.mongo.common.model.Audit;
 import org.jeecg.modules.qwert.conn.dbconn.mongo.repository.impl.DemoRepository;
@@ -18,12 +22,18 @@ import org.jeecg.modules.qwert.conn.modbus4j.source.exception.ModbusTransportExc
 import org.jeecg.modules.qwert.conn.modbus4j.source.ip.IpParameters;
 import org.jeecg.modules.qwert.conn.modbus4j.source.locator.BaseLocator;
 import org.jeecg.modules.qwert.conn.modbus4j.test.TestSerialPortWrapper;
+import org.jeecg.modules.qwert.conn.qudong.QwertMaster;
+import org.jeecg.modules.qwert.conn.qudong.base.QudongUtils;
+import org.jeecg.modules.qwert.conn.qudong.exception.QudongTransportException;
+import org.jeecg.modules.qwert.conn.qudong.msg.ReadM7000Request;
+import org.jeecg.modules.qwert.conn.qudong.msg.ReadM7000Response;
 import org.jeecg.modules.qwert.conn.snmp.SnmpData;
 import org.jeecg.modules.qwert.jst.entity.*;
 import org.jeecg.modules.qwert.jst.mapper.JstZcDevMapper;
 import org.jeecg.modules.qwert.jst.service.*;
 import org.jeecg.modules.qwert.jst.utils.JstConstant;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -39,6 +49,9 @@ import java.util.stream.Collectors;
  */
 @Service
 public class JstZcJobServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> implements IJstZcJobService {
+	@Lazy
+	@Resource
+	private RedisUtil redisUtil;
 	@Autowired
 	private IJstZcCatService jstZcCatService;
 	@Resource
@@ -99,10 +112,7 @@ public class JstZcJobServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
 			modNo="blank";
 		}
 		String conInfo = jzd.getConInfo();
-//			System.out.println(conInfo);
 		JSONObject jsonConInfo = JSON.parseObject(conInfo);
-		String ipAddress = jsonConInfo.getString("ipAddress");
-		String port = jsonConInfo.getString("port");
 		String type = jsonConInfo.getString("type");
 		String proType = jsonConInfo.getString("proType");
 		String stime = jsonConInfo.getString("sleeptime");
@@ -111,10 +121,7 @@ public class JstZcJobServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
 			sleeptime=Integer.parseInt(stime);
 		}
 
-		String version = null;
-		String community = null;
 
-		BatchResults<String> results = null;
 		List<JstZcTarget> jztCollect = null;
 		if(orgUser.equals("guangfa")){
 			jztCollect = jstZcTargetService.queryJztList5(devNo);
@@ -123,25 +130,64 @@ public class JstZcJobServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
 			jztCollect = jstZcTargetService.queryJztList4(catNo);
 		}
 
-//		if (type.equals("SOCKET")||type.equals("MODBUSRTU")||type.equals("MODBUSASCII")||type.equals("MODBUSTCP")) {
+		if (proType.toUpperCase().equals("7000D")) {
+			handleM7000d(jsonConInfo, resList, jztCollect);
+		}
 		if (proType.toUpperCase().equals("MODBUS")) {
 			handleModbus(type, resList, devNo, devName, catNo, jsonConInfo, sleeptime,
 					jztCollect);
 		}
 
 		if (proType.toUpperCase().equals("SNMP")) {
-			handleSnmp(type, resList, modNo,devNo, devName, catNo, jsonConInfo, ipAddress, jztCollect);
+			handleSnmp(type, resList, devNo, devName, catNo, jsonConInfo, jztCollect);
 		}
 		end = System.currentTimeMillis();
 		System.out.println(devName+" 开始时间:" + start + "; 结束时间:" + end + "; 用时:" + (end - start) + "(ms)");
 	}
 
-	private void handleSnmp(String type,List resList, String modNo,String devNo, String devName, String catNo, JSONObject jsonConInfo, String ipAddress, List<JstZcTarget> jztCollect)  {
-		String version;
-		String community;
-		version = jsonConInfo.getString("version");
+	private void handleM7000d(JSONObject jsonConInfo, List resList, List<JstZcTarget> jztCollect) {
+		int slaveId = Integer.parseInt(jsonConInfo.getString("slave"));
+		QwertMaster master = QudongUtils.getQwertMaster(jsonConInfo);
+		String tmpInstruct=null;
+		String retmessage=null;
+		for (int i = 0; i < jztList.size(); i++) {
+			JstZcTarget jzt = jztList.get(i);
+			String instruct = jzt.getInstruct();
+			if(instruct.equals(tmpInstruct)){
+				String rm1 = jzt.getTargetNo();
+				String rm2 = jzt.getAddress();
+				String rm = QudongUtils.getM7000DString(retmessage, rm2);
+				resList.add(rm1+"="+rm);
+				continue;
+			}
+			try {
+				ReadM7000Request request = new ReadM7000Request(slaveId, 6);
+				ReadM7000Response response = (ReadM7000Response) master.send(request);
+
+				if (response.isException())
+					System.out.println("Exception response: message=" + response.getExceptionMessage());
+				else{
+					retmessage =  response.getBinData().substring(0,8);
+					String rm1 = jzt.getTargetNo();
+					String rm2 = jzt.getAddress();
+					// 不清楚应该是低位在前，高位在前
+					String rm = QudongUtils.getM7000DString(retmessage, rm2);
+					resList.add(rm1+"="+rm);
+				}
+			}
+			catch (QudongTransportException e) {
+				e.printStackTrace();
+			}
+			tmpInstruct = jzt.getInstruct();
+		}
+	}
+
+
+	private void handleSnmp(String type,List resList,String devNo, String devName, String catNo, JSONObject jsonConInfo, List<JstZcTarget> jztCollect)  {
+		String ipAddress = jsonConInfo.getString("ipAddress");
+		String version = jsonConInfo.getString("version");
 		String timeOut = jsonConInfo.getString("timeOut");
-		community = jsonConInfo.getString("community");
+		String community = jsonConInfo.getString("community");
 		jztCollect.stream().sorted(Comparator.comparing(JstZcTarget::getInstruct));
 		List<String> oidList = new ArrayList<String>();
 		//		System.out.println(devNo+"::");
@@ -215,11 +261,14 @@ public class JstZcJobServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
 
 	private void handelDbMq(String type, List resList, String devNo) {
 		String resValue = org.apache.commons.lang.StringUtils.join(resList.toArray(),";");
-		Audit audit = new Audit();
+/*		Audit audit = new Audit();
 		audit.setDevNo(devNo);
 		audit.setAuditValue(resValue);
 		audit.setAuditTime(new Date());
-		repository.insertAudit(audit);
+		repository.insertAudit(audit); */
+		redisUtil.set(devNo+"::"+ DateUtils.now(),resValue);
+		redisUtil.expire(devNo+"::"+ DateUtils.now(), 7200);
+
 	}
 
 	private void handleModbus(String type, List resList, String devNo,
@@ -407,7 +456,7 @@ public class JstZcJobServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
 
 				String alarm=null;
 				if(resList.size()>0) {
-					alarm=trackAlarm(resList, jztCollect);
+					alarm=trackAlarm(devNo,resList, jztCollect);
 				}
 				if(alarm!=null) {
 					String[] tmpAlarm = alarm.split("::");
@@ -492,7 +541,7 @@ public class JstZcJobServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
 		handelDbMq(type, resList, devNo);
 	}
 
-	private String trackAlarm(List resList, List<JstZcTarget> jztCollect) {
+	private String trackAlarm(String devNo, List resList, List<JstZcTarget> jztCollect) {
 		String alarmValue="";
 		String alarmNo="";
 
@@ -509,15 +558,25 @@ public class JstZcJobServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
 				if(jzt.getAlarmPoint()!=null&&jzt.getAlarmPoint().equals("1")&& jzt.getInfoType()!=null ) {
 					jztfind=true;
 				}
-				if(jzt.getInterceptBit()!=null && jzt.getInfoType()!=null) {
-					jztfind=true;
-				}
+	//			if(jzt.getInterceptBit()!=null && jzt.getInfoType()!=null) {
+	//				jztfind=true;
+	//			}
 				if(jzt.getAddress().indexOf('.')!=-1){
 					jztfind=true;
 				}
-				if(jztfind) {
+				String rkey=null;
+				String rvalue=null;
+				if(!jztfind){
+					rkey = devNo + "::" + jzt.getTargetNo();
+					rvalue=r3[1];
+					Object keyValue = redisUtil.get(rkey);
+					if(keyValue==null || !keyValue.toString().equals(rvalue)){
+						redisUtil.set(rkey, rvalue);
+					}
+				}else {
 					if(jzt.getInfoType().equals("digital")||jzt.getInfoType().equals("状态量")){
-						if((jzt.getInterceptBit()!=null&&jzt.getInterceptBit().indexOf("bitIndex")!=-1)||
+						if(
+						//		(jzt.getInterceptBit()!=null&&jzt.getInterceptBit().indexOf("bitIndex")!=-1)||
 							jzt.getAddress().indexOf(".")!=-1) {
 							String tmpinstruct=jzt.getInstruct();
 							String tmpaddress=jzt.getAddress();
@@ -525,7 +584,7 @@ public class JstZcJobServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
 							if(tmpaddress.indexOf('.')!=-1){
 								String[] tas = tmpaddress.split("\\.");
 								String ta = tas[0];
-								jztc = jztCollect.stream().filter(u -> ta.equals(u.getAddress().substring(0,4))).collect(Collectors.toList());
+								jztc = jztCollect.stream().filter(u -> ta.equals((u.getAddress().split("\\."))[0])).collect(Collectors.toList());
 							}else{
 								String ta = jzt.getAddress();
 								jztc = jztCollect.stream().filter(u -> ta.equals(u.getAddress())).collect(Collectors.toList());
@@ -566,6 +625,13 @@ public class JstZcJobServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
 									int a5 = 15 - a4;
 									a6 = binaryStr.substring(a5, a5 + 1);
 								}
+								rkey = devNo + "::" + item.getTargetNo();
+								rvalue=r3[1];
+								Object keyValue = redisUtil.get(rkey);
+								if(keyValue==null || !keyValue.toString().equals(rvalue)){
+									redisUtil.set(rkey, rvalue);
+								}
+
 								String bjz = item.getCtrlUp();
 								if(bjz!=null) {
 									if (bjz.indexOf("==") != -1) {
@@ -585,6 +651,12 @@ public class JstZcJobServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
 								}
 							}
 						}else {
+							rkey = devNo + "::" + jzt.getTargetNo();
+							rvalue=r3[1];
+							Object keyValue = redisUtil.get(rkey);
+							if(keyValue==null || !keyValue.toString().equals(rvalue)){
+								redisUtil.set(rkey, rvalue);
+							}
 							String bjz = jzt.getCtrlUp();
 							if(bjz!=null) {
 								if(bjz.indexOf("==")!=-1) {
@@ -604,50 +676,79 @@ public class JstZcJobServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
 							}
 						}
 					}else {
-						String[] mn = jzt.getCtrlDown().split(";");
-
-
-						for(int rm=0;rm<mn.length;rm++) {
-							String yinzi=jzt.getYinzi();
-							if(mn[rm].indexOf("<")!=-1) {
-								String a1 = mn[rm].replace("<", "").replace("=", "");
-								float r4=0f;
-								String str=r3[1];
-								if(str.contains(".")) {
-									 int indexOf = str.indexOf(".");
-									 str = str.substring(0, indexOf);
-								}
-								if(yinzi!=null) {
-									r4=Integer.parseInt(str)/Integer.parseInt(yinzi);
-								}else {
-									r4=Integer.parseInt(str);
-								}
-								if(r4<=Integer.parseInt(a1)) {
-									alarmNo+=jzt.getId()+",";
-									alarmValue+=jzt.getTargetName()+"-报警值-"+r4+",";
-								}
+						rkey = devNo + "::" + jzt.getTargetNo();
+						rvalue=r3[1];
+						String yinzi=jzt.getYinzi();
+						float r4=0f;
+						if(rvalue.contains(".")) {
+							int indexOf = rvalue.indexOf(".");
+							rvalue = rvalue.substring(0, indexOf);
+						}
+						if(yinzi!=null) {
+							r4=Integer.parseInt(rvalue)/Integer.parseInt(yinzi);
+						}else {
+							r4=Integer.parseInt(rvalue);
+						}
+						if(jzt.getValMax()>0) {
+							Object keyValue = redisUtil.get(rkey);
+							String flag = null;
+							if (r4 > jzt.getValMax()) {
+								flag = "1";
 							}
-							if(mn[rm].indexOf(">")!=-1) {
-								String a1 = mn[rm].replace(">", "").replace("=", "");
-						//		String yinzi=jzt.getYinzi();
-								float r4=0f;
-								String str=r3[1];
-								if(str.contains(".")) {
-									 int indexOf = str.indexOf(".");
-									 str = str.substring(0, indexOf);
+							if (r4 < jzt.getValMin()) {
+								flag = "1";
+							}
+							if (r4 > jzt.getValMin() && r4 < jzt.getValMax()) {
+								flag = "0";
+							}
+							if (keyValue == null || !flag.equals(keyValue)) {
+								redisUtil.set(rkey, flag);
+								alarmNo += jzt.getId() + ",";
+								alarmValue += jzt.getTargetName() + "-报警值-" + r4 + "-" + keyValue + "to" + flag;
+							}
+						}else {
+							String[] mn = jzt.getCtrlDown().split(";");
+							for (int rm = 0; rm < mn.length; rm++) {
+								yinzi = jzt.getYinzi();
+								if (mn[rm].indexOf("<") != -1) {
+									String a1 = mn[rm].replace("<", "").replace("=", "");
+									r4 = 0f;
+									String str = r3[1];
+									if (str.contains(".")) {
+										int indexOf = str.indexOf(".");
+										str = str.substring(0, indexOf);
+									}
+									if (yinzi != null) {
+										r4 = Integer.parseInt(str) / Integer.parseInt(yinzi);
+									} else {
+										r4 = Integer.parseInt(str);
+									}
+									if (r4 <= Integer.parseInt(a1)) {
+										alarmNo += jzt.getId() + ",";
+										alarmValue += jzt.getTargetName() + "-报警值-" + r4 + ",";
+									}
 								}
-								if(yinzi!=null) {
-									r4=Integer.parseInt(str)/Integer.parseInt(yinzi);
-								}else {
-									r4=Integer.parseInt(str);
-								}
-								if(r4>=Integer.parseInt(a1)) {
-									alarmNo+=jzt.getId()+",";
-									alarmValue+=jzt.getTargetName()+"-报警值-"+r4+",";
+								if (mn[rm].indexOf(">") != -1) {
+									String a1 = mn[rm].replace(">", "").replace("=", "");
+									//		String yinzi=jzt.getYinzi();
+									r4 = 0f;
+									String str = r3[1];
+									if (str.contains(".")) {
+										int indexOf = str.indexOf(".");
+										str = str.substring(0, indexOf);
+									}
+									if (yinzi != null) {
+										r4 = Integer.parseInt(str) / Integer.parseInt(yinzi);
+									} else {
+										r4 = Integer.parseInt(str);
+									}
+									if (r4 >= Integer.parseInt(a1)) {
+										alarmNo += jzt.getId() + ",";
+										alarmValue += jzt.getTargetName() + "-报警值-" + r4 + ",";
+									}
 								}
 							}
 						}
-
 					}
 				}
 			}
