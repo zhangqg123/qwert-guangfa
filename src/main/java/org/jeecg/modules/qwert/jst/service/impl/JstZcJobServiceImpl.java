@@ -626,51 +626,71 @@ public class JstZcJobServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
 									a6 = binaryStr.substring(a5, a5 + 1);
 								}
 								rkey = devNo + "::" + item.getTargetNo();
-								rvalue=r3[1];
-								Object keyValue = redisUtil.get(rkey);
-								if(keyValue==null || !keyValue.toString().equals(rvalue)){
-									redisUtil.set(rkey, rvalue);
-								}
-
-								String bjz = item.getCtrlUp();
-								if(bjz!=null) {
-									if (bjz.indexOf("==") != -1) {
-										String[] bj = bjz.split("==");
-										if (a6.equals(bj[1])) {
-											alarmNo += item.getId() + ",";
-											alarmValue += item.getTargetName() + ",";
+//								rvalue=a6;
+								String evt = jzt.getEvt01();
+								if(evt!=null) {
+									rvalue = a6;
+									Object keyValue = redisUtil.get(rkey);
+									if (keyValue == null || !keyValue.toString().equals(rvalue)) {
+										redisUtil.set(rkey, rvalue);
+										alarmNo += jzt.getId() + ",";
+										String message = evt;
+										if (rvalue.equals("0")) {
+											message = jzt.getEvt10();
 										}
+										alarmValue += jzt.getTargetName() + "-" + message + "-" + keyValue + "to" + rvalue + ",";
 									}
-									if (bjz.indexOf("!=") != -1) {
-										String[] bj = bjz.split("!=");
-										if (!a6.equals(bj[1])) {
-											alarmNo += item.getId() + ",";
-											alarmValue += item.getTargetName() + ",";
+								}else {
+									String bjz = item.getCtrlUp();
+									if (bjz != null) {
+										if (bjz.indexOf("==") != -1) {
+											String[] bj = bjz.split("==");
+											if (a6.equals(bj[1])) {
+												alarmNo += item.getId() + ",";
+												alarmValue += item.getTargetName() + ",";
+											}
+										}
+										if (bjz.indexOf("!=") != -1) {
+											String[] bj = bjz.split("!=");
+											if (!a6.equals(bj[1])) {
+												alarmNo += item.getId() + ",";
+												alarmValue += item.getTargetName() + ",";
+											}
 										}
 									}
 								}
 							}
 						}else {
 							rkey = devNo + "::" + jzt.getTargetNo();
-							rvalue=r3[1];
-							Object keyValue = redisUtil.get(rkey);
-							if(keyValue==null || !keyValue.toString().equals(rvalue)){
-								redisUtil.set(rkey, rvalue);
-							}
-							String bjz = jzt.getCtrlUp();
-							if(bjz!=null) {
-								if(bjz.indexOf("==")!=-1) {
-									String[] bj = bjz.split("==");
-									if(r3[1].equals(bj[1])) {
-										alarmNo+=jzt.getId()+",";
-										alarmValue+=jzt.getTargetName()+",";
+							String evt = jzt.getEvt01();
+							if(evt!=null) {
+								rvalue = r3[1];
+								Object keyValue = redisUtil.get(rkey);
+								if (keyValue == null || !keyValue.toString().equals(rvalue)) {
+									redisUtil.set(rkey, rvalue);
+									alarmNo += jzt.getId() + ",";
+									String message = evt;
+									if (rvalue.equals("0")) {
+										message = jzt.getEvt10();
 									}
+									alarmValue += jzt.getTargetName() + "-" + message + "-" + keyValue + "to" + rvalue + ",";
 								}
-								if(bjz.indexOf("!=")!=-1) {
-									String[] bj = bjz.split("!=");
-									if(!r3[1].equals(bj[1])) {
-										alarmNo+=jzt.getId()+",";
-										alarmValue+=jzt.getTargetName()+",";
+							}else {
+								String bjz = jzt.getCtrlUp();
+								if (bjz != null) {
+									if (bjz.indexOf("==") != -1) {
+										String[] bj = bjz.split("==");
+										if (r3[1].equals(bj[1])) {
+											alarmNo += jzt.getId() + ",";
+											alarmValue += jzt.getTargetName() + ",";
+										}
+									}
+									if (bjz.indexOf("!=") != -1) {
+										String[] bj = bjz.split("!=");
+										if (!r3[1].equals(bj[1])) {
+											alarmNo += jzt.getId() + ",";
+											alarmValue += jzt.getTargetName() + ",";
+										}
 									}
 								}
 							}
@@ -704,7 +724,7 @@ public class JstZcJobServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
 							if (keyValue == null || !flag.equals(keyValue)) {
 								redisUtil.set(rkey, flag);
 								alarmNo += jzt.getId() + ",";
-								alarmValue += jzt.getTargetName() + "-报警值-" + r4 + "-" + keyValue + "to" + flag;
+								alarmValue += jzt.getTargetName() + "-报警值-" + r4 + "-" + keyValue + "to" + flag+",";
 							}
 						}else {
 							String[] mn = jzt.getCtrlDown().split(";");
