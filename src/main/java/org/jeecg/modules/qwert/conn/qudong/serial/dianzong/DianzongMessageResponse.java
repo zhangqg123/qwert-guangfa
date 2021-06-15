@@ -36,8 +36,8 @@ import org.jeecg.modules.qwert.conn.qudong.sero.util.queue.ByteQueue;
  */
 public class DianzongMessageResponse extends DianzongMessage implements OutgoingResponseMessage, IncomingResponseMessage {
     static DianzongMessageResponse createDianzongMessageResponse(ByteQueue queue) throws QudongTransportException {
-        ByteQueue msgQueue = QwertAsciiUtils.getUnDianzongMessage(queue);
-        QwertResponse response = QwertResponse.createQwertResponse(msgQueue);
+//        ByteQueue msgQueue = QwertAsciiUtils.getUnDianzongMessage(queue);
+        QwertResponse response = QwertResponse.createQwertResponse(queue);
         DianzongMessageResponse dianzongResponse = new DianzongMessageResponse(response);
 
         // Return the data.
