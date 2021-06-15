@@ -18,46 +18,33 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.jeecg.modules.qwert.conn.qudong.serial.dianzong;
+package org.jeecg.modules.qwert.conn.qudong.serial.rtu;
 
-import org.jeecg.modules.qwert.conn.qudong.base.QwertAsciiUtils;
-import org.jeecg.modules.qwert.conn.qudong.msg.QwertMessage;
-import org.jeecg.modules.qwert.conn.qudong.serial.SerialMessage;
+import org.jeecg.modules.qwert.conn.qudong.base.BaseMessageParser;
+import org.jeecg.modules.qwert.conn.qudong.sero.messaging.IncomingMessage;
 import org.jeecg.modules.qwert.conn.qudong.sero.util.queue.ByteQueue;
 
 /**
- * <p>Abstract DianzongMessage class.</p>
+ * <p>RtuMessageParser class.</p>
  *
  * @author Matthew Lohbihler
  * @version 5.0.0
  */
-abstract public class DianzongMessage extends SerialMessage {
-//    private static final byte START = ':';
-//    private static final byte[] END = { '\r', '\n' };
-    private static final byte START = '~';
-    private static final byte[] END = { '\r', '\n' };
-
-    DianzongMessage(QwertMessage qwertMessage) {
-        super(qwertMessage);
-    }
-
-
+public class RtuMessageParser extends BaseMessageParser {
     /**
-     * <p>getMessageData.</p>
+     * <p>Constructor for RtuMessageParser.</p>
      *
-     * @return an array of {@link byte} objects.
-     * @throws Exception 
+     * @param master a boolean.
      */
-    public byte[] getMessageData2(int r) {
-        ByteQueue queue = new ByteQueue();
-        qwertMessage.write2(queue,r);
-        return QwertAsciiUtils.getAsciiData(queue,r);
-    }
-    
-    public byte[] getMessageData() {
-        ByteQueue queue = new ByteQueue();
-        qwertMessage.write(queue);
-        return QwertAsciiUtils.getAsciiData(queue,0);
+    public RtuMessageParser(boolean master) {
+        super(master);
     }
 
+    /** {@inheritDoc} */
+    @Override
+    protected IncomingMessage parseMessageImpl(ByteQueue queue) throws Exception {
+        if (master)
+            return RtuMessageResponse.createDianzongMessageResponse(queue);
+        return RtuMessageRequest.createDianzongMessageRequest(queue);
+    }
 }

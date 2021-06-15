@@ -24,7 +24,7 @@ import org.jeecg.modules.qwert.conn.qudong.exception.QudongTransportException;
 import org.jeecg.modules.qwert.conn.qudong.sero.util.queue.ByteQueue;
 
 /**
- * <p>Abstract DianzongMessage class.</p>
+ * <p>Abstract RtuMessage class.</p>
  *
  * @author Matthew Lohbihler
  * @version 5.0.0

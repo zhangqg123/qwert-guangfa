@@ -24,8 +24,8 @@ import org.jeecg.modules.qwert.conn.qudong.ip.IpParameters;
 import org.jeecg.modules.qwert.conn.qudong.ip.tcp.TcpMaster;
 import org.jeecg.modules.qwert.conn.qudong.ip.tcp.TcpSlave;
 import org.jeecg.modules.qwert.conn.qudong.serial.SerialPortWrapper;
-import org.jeecg.modules.qwert.conn.qudong.serial.dianzong.DianzongMaster;
-import org.jeecg.modules.qwert.conn.qudong.serial.dianzong.DianzongSlave;
+import org.jeecg.modules.qwert.conn.qudong.serial.rtu.RtuMaster;
+import org.jeecg.modules.qwert.conn.qudong.serial.rtu.RtuSlave;
 
 /**
  * <p>QwertFactory class.</p>
@@ -36,23 +36,23 @@ import org.jeecg.modules.qwert.conn.qudong.serial.dianzong.DianzongSlave;
 public class QwertFactory {
     
     /**
-     * <p>createDianzongMaster.</p>
+     * <p>createRtuMaster.</p>
      *
      * @param wrapper a {@link org.jeecg.modules.qwert.conn.qudong.serial.SerialPortWrapper} object.
      * @return a {@link QwertMaster} object.
      */
-    public QwertMaster createDianzongMaster(SerialPortWrapper wrapper) {
-        return new DianzongMaster(wrapper);
+    public QwertMaster createRtuMaster(SerialPortWrapper wrapper) {
+        return new RtuMaster(wrapper);
     }
 
      /**
-     * <p>createDianzongSlave.</p>
+     * <p>createRtuSlave.</p>
      *
      * @param wrapper a {@link org.jeecg.modules.qwert.conn.qudong.serial.SerialPortWrapper} object.
      * @return a {@link QwertSlaveSet} object.
      */
-    public QwertSlaveSet createDianzongSlave(SerialPortWrapper wrapper) {
-        return new DianzongSlave(wrapper);
+    public QwertSlaveSet createRtuSlave(SerialPortWrapper wrapper) {
+        return new RtuSlave(wrapper);
     }
     /**
      * <p>createTcpMaster.</p>

@@ -18,7 +18,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.jeecg.modules.qwert.conn.qudong.serial.dianzong;
+package org.jeecg.modules.qwert.conn.qudong.serial.rtu;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -39,7 +39,7 @@ import org.jeecg.modules.qwert.conn.qudong.sero.messaging.StreamTransport;
  * @author Matthew Lohbihler
  * @version 5.0.0
  */
-public class DianzongMaster extends SerialMaster {
+public class RtuMaster extends SerialMaster {
     private final Log LOG = LogFactory.getLog(SerialMaster.class);
 
     private MessageControl conn;
@@ -51,7 +51,7 @@ public class DianzongMaster extends SerialMaster {
      *
      * @param wrapper a {@link org.jeecg.modules.qwert.conn.qudong.serial.SerialPortWrapper} object.
      */
-    public DianzongMaster(SerialPortWrapper wrapper) {
+    public RtuMaster(SerialPortWrapper wrapper) {
         super(wrapper, true);
     }
 
@@ -60,7 +60,7 @@ public class DianzongMaster extends SerialMaster {
      * @param wrapper a {@link org.jeecg.modules.qwert.conn.qudong.serial.SerialPortWrapper} object.
      * @param validateResponse - confirm that requested slave id is the same in the response
      */
-    public DianzongMaster(SerialPortWrapper wrapper, boolean validateResponse) {
+    public RtuMaster(SerialPortWrapper wrapper, boolean validateResponse) {
         super(wrapper, validateResponse);
     }
 
@@ -79,9 +79,9 @@ public class DianzongMaster extends SerialMaster {
     @Override
     protected void openConnection(MessageControl toClose) throws Exception {
         super.openConnection(toClose);
-        DianzongMessageParser DianzongMessageParser = new DianzongMessageParser(true);
+        RtuMessageParser RtuMessageParser = new RtuMessageParser(true);
         this.conn = getMessageControl();
-        this.conn.start(transport, DianzongMessageParser, null, new SerialWaitingRoomKeyFactory());
+        this.conn.start(transport, RtuMessageParser, null, new SerialWaitingRoomKeyFactory());
         if (getePoll() == null) {
             ((StreamTransport) transport).start("Qwert ASCII master");
         }
@@ -99,12 +99,12 @@ public class DianzongMaster extends SerialMaster {
     @Override
     public QwertResponse sendImpl(QwertRequest request) throws QudongTransportException {
         // Wrap the modbus request in an ascii request.
-        DianzongMessageRequest dianzongRequest = new DianzongMessageRequest(request);
+        RtuMessageRequest dianzongRequest = new RtuMessageRequest(request);
 
         // Send the request to get the response.
-        DianzongMessageResponse dianzongResponse;
+        RtuMessageResponse dianzongResponse;
         try {
-            dianzongResponse = (DianzongMessageResponse) conn.send(dianzongRequest);
+            dianzongResponse = (RtuMessageResponse) conn.send(dianzongRequest);
             if (dianzongResponse == null)
                 return null;
             return dianzongResponse.getQwertResponse();
@@ -113,7 +113,7 @@ public class DianzongMaster extends SerialMaster {
             try {
                 LOG.debug("Connection may have been reset. Attempting to re-open.");
                 openConnection(conn);
-                dianzongResponse = (DianzongMessageResponse) conn.send(dianzongRequest);
+                dianzongResponse = (RtuMessageResponse) conn.send(dianzongRequest);
                 if (dianzongResponse == null)
                     return null;
                 return dianzongResponse.getQwertResponse();

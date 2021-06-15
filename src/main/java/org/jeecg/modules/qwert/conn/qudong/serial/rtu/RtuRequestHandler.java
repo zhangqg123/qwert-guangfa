@@ -18,7 +18,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.jeecg.modules.qwert.conn.qudong.serial.dianzong;
+package org.jeecg.modules.qwert.conn.qudong.serial.rtu;
 
 import org.jeecg.modules.qwert.conn.qudong.QwertSlaveSet;
 import org.jeecg.modules.qwert.conn.qudong.base.BaseRequestHandler;
@@ -28,28 +28,28 @@ import org.jeecg.modules.qwert.conn.qudong.sero.messaging.IncomingRequestMessage
 import org.jeecg.modules.qwert.conn.qudong.sero.messaging.OutgoingResponseMessage;
 
 /**
- * <p>DianzongRequestHandler class.</p>
+ * <p>RtuRequestHandler class.</p>
  *
  * @author Matthew Lohbihler
  * @version 5.0.0
  */
-public class DianzongRequestHandler extends BaseRequestHandler {
+public class RtuRequestHandler extends BaseRequestHandler {
     /**
-     * <p>Constructor for DianzongRequestHandler.</p>
+     * <p>Constructor for RtuRequestHandler.</p>
      *
      * @param slave a {@link QwertSlaveSet} object.
      */
-    public DianzongRequestHandler(QwertSlaveSet slave) {
+    public RtuRequestHandler(QwertSlaveSet slave) {
         super(slave);
     }
 
     /** {@inheritDoc} */
     public OutgoingResponseMessage handleRequest(IncomingRequestMessage req) throws Exception {
-        DianzongMessageRequest dianzongRequest = (DianzongMessageRequest) req;
+        RtuMessageRequest dianzongRequest = (RtuMessageRequest) req;
         QwertRequest request = dianzongRequest.getQwertRequest();
         QwertResponse response = handleRequestImpl(request);
         if (response == null)
             return null;
-        return new DianzongMessageResponse(response);
+        return new RtuMessageResponse(response);
     }
 }

@@ -18,53 +18,46 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.jeecg.modules.qwert.conn.qudong.serial.dianzong;
+package org.jeecg.modules.qwert.conn.qudong.serial.rtu;
 
-import org.jeecg.modules.qwert.conn.qudong.base.QwertAsciiUtils;
 import org.jeecg.modules.qwert.conn.qudong.exception.QudongTransportException;
 import org.jeecg.modules.qwert.conn.qudong.msg.QwertMessage;
-import org.jeecg.modules.qwert.conn.qudong.msg.QwertRequest;
-import org.jeecg.modules.qwert.conn.qudong.sero.messaging.IncomingRequestMessage;
-import org.jeecg.modules.qwert.conn.qudong.sero.messaging.OutgoingRequestMessage;
+import org.jeecg.modules.qwert.conn.qudong.msg.QwertResponse;
+import org.jeecg.modules.qwert.conn.qudong.sero.messaging.IncomingResponseMessage;
+import org.jeecg.modules.qwert.conn.qudong.sero.messaging.OutgoingResponseMessage;
 import org.jeecg.modules.qwert.conn.qudong.sero.util.queue.ByteQueue;
 
 /**
- * <p>DianzongMessageRequest class.</p>
+ * <p>RtuMessageResponse class.</p>
  *
  * @author Matthew Lohbihler
  * @version 5.0.0
  */
-public class DianzongMessageRequest extends DianzongMessage implements OutgoingRequestMessage, IncomingRequestMessage {
-    static DianzongMessageRequest createDianzongMessageRequest(ByteQueue queue) throws QudongTransportException {
+public class RtuMessageResponse extends RtuMessage implements OutgoingResponseMessage, IncomingResponseMessage {
+    static RtuMessageResponse createDianzongMessageResponse(ByteQueue queue) throws QudongTransportException {
 //        ByteQueue msgQueue = QwertAsciiUtils.getUnDianzongMessage(queue);
-        QwertRequest request = QwertRequest.createQwertRequest(queue);
-        DianzongMessageRequest dianzongRequest = new DianzongMessageRequest(request);
+        QwertResponse response = QwertResponse.createQwertResponse(queue);
+        RtuMessageResponse dianzongResponse = new RtuMessageResponse(response);
 
         // Return the data.
-        return dianzongRequest;
+        return dianzongResponse;
     }
 
     /**
-     * <p>Constructor for DianzongMessageRequest.</p>
+     * <p>Constructor for RtuMessageResponse.</p>
      *
      * @param QwertMessage a {@link org.jeecg.modules.qwert.conn.qudong.msg.QwertMessage} object.
      */
-    public DianzongMessageRequest(QwertMessage qwertMessage) {
-        super(qwertMessage);
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public boolean expectsResponse() {
-        return qwertMessage.getSlaveId() != 0;
+    public RtuMessageResponse(QwertMessage QwertMessage) {
+        super(QwertMessage);
     }
 
     /**
-     * <p>getQwertRequest.</p>
+     * <p>getQwertResponse.</p>
      *
-     * @return a {@link org.jeecg.modules.qwert.conn.qudong.msg.QwertRequest} object.
+     * @return a {@link org.jeecg.modules.qwert.conn.qudong.msg.QwertResponse} object.
      */
-    public QwertRequest getQwertRequest() {
-        return (QwertRequest) qwertMessage;
+    public QwertResponse getQwertResponse() {
+        return (QwertResponse) qwertMessage;
     }
 }

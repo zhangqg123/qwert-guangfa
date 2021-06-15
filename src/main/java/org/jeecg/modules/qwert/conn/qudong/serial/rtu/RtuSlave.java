@@ -18,7 +18,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.jeecg.modules.qwert.conn.qudong.serial.dianzong;
+package org.jeecg.modules.qwert.conn.qudong.serial.rtu;
 
 import java.io.IOException;
 
@@ -28,20 +28,20 @@ import org.jeecg.modules.qwert.conn.qudong.serial.SerialSlave;
 import org.jeecg.modules.qwert.conn.qudong.sero.messaging.MessageControl;
 
 /**
- * <p>DianzongSlave class.</p>
+ * <p>RtuSlave class.</p>
  *
  * @author Matthew Lohbihler
  * @version 5.0.0
  */
-public class DianzongSlave extends SerialSlave {
+public class RtuSlave extends SerialSlave {
     private MessageControl conn;
 
     /**
-     * <p>Constructor for DianzongSlave.</p>
+     * <p>Constructor for RtuSlave.</p>
      *
      * @param wrapper a {@link org.jeecg.modules.qwert.conn.qudong.serial.SerialPortWrapper} object.
      */
-    public DianzongSlave(SerialPortWrapper wrapper) {
+    public RtuSlave(SerialPortWrapper wrapper) {
         super(wrapper);
     }
 
@@ -50,14 +50,14 @@ public class DianzongSlave extends SerialSlave {
     public void start() throws ModbusInitException {
         super.start();
 
-        DianzongMessageParser DianzongMessageParser = new DianzongMessageParser(false);
-        DianzongRequestHandler dianzongRequestHandler = new DianzongRequestHandler(this);
+        RtuMessageParser RtuMessageParser = new RtuMessageParser(false);
+        RtuRequestHandler dianzongRequestHandler = new RtuRequestHandler(this);
 
         conn = new MessageControl();
         conn.setExceptionHandler(getExceptionHandler());
 
         try {
-            conn.start(transport, DianzongMessageParser, dianzongRequestHandler, null);
+            conn.start(transport, RtuMessageParser, dianzongRequestHandler, null);
             transport.start("Qwert ASCII slave");
         }
         catch (IOException e) {

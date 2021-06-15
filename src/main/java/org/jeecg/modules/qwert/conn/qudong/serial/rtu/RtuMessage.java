@@ -18,33 +18,46 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.jeecg.modules.qwert.conn.qudong.serial.dianzong;
+package org.jeecg.modules.qwert.conn.qudong.serial.rtu;
 
-import org.jeecg.modules.qwert.conn.qudong.base.BaseMessageParser;
-import org.jeecg.modules.qwert.conn.qudong.sero.messaging.IncomingMessage;
+import org.jeecg.modules.qwert.conn.qudong.base.QwertAsciiUtils;
+import org.jeecg.modules.qwert.conn.qudong.msg.QwertMessage;
+import org.jeecg.modules.qwert.conn.qudong.serial.SerialMessage;
 import org.jeecg.modules.qwert.conn.qudong.sero.util.queue.ByteQueue;
 
 /**
- * <p>DianzongMessageParser class.</p>
+ * <p>Abstract RtuMessage class.</p>
  *
  * @author Matthew Lohbihler
  * @version 5.0.0
  */
-public class DianzongMessageParser extends BaseMessageParser {
-    /**
-     * <p>Constructor for DianzongMessageParser.</p>
-     *
-     * @param master a boolean.
-     */
-    public DianzongMessageParser(boolean master) {
-        super(master);
+abstract public class RtuMessage extends SerialMessage {
+//    private static final byte START = ':';
+//    private static final byte[] END = { '\r', '\n' };
+    private static final byte START = '~';
+    private static final byte[] END = { '\r', '\n' };
+
+    RtuMessage(QwertMessage qwertMessage) {
+        super(qwertMessage);
     }
 
-    /** {@inheritDoc} */
-    @Override
-    protected IncomingMessage parseMessageImpl(ByteQueue queue) throws Exception {
-        if (master)
-            return DianzongMessageResponse.createDianzongMessageResponse(queue);
-        return DianzongMessageRequest.createDianzongMessageRequest(queue);
+
+    /**
+     * <p>getMessageData.</p>
+     *
+     * @return an array of {@link byte} objects.
+     * @throws Exception 
+     */
+    public byte[] getMessageData2(int r) {
+        ByteQueue queue = new ByteQueue();
+        qwertMessage.write2(queue,r);
+        return QwertAsciiUtils.getAsciiData(queue,r);
     }
+    
+    public byte[] getMessageData() {
+        ByteQueue queue = new ByteQueue();
+        qwertMessage.write(queue);
+        return QwertAsciiUtils.getAsciiData(queue,0);
+    }
+
 }
