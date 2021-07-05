@@ -15,7 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
  * @Author Scott
  */
 @Slf4j
-public class UpsJob3 implements Job {
+public class JstDevJob implements Job {
 
 	/**
 	 * 若参数变量名修改 QuartzJobController中也需对应修改
@@ -33,6 +33,8 @@ public class UpsJob3 implements Job {
 
 		log.info(String.format("welcome %s! Jeecg-Boot 带参数定时任务 SampleParamJob !   时间:" + DateUtils.now(), this.parameter));
 		JstConstant.debugflag=1;
+		long start, end;
+		start = System.currentTimeMillis();
 		jstZcJobService.readDev(parameter);
 	}
 }

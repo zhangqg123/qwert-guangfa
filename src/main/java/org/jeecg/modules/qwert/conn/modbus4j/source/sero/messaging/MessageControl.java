@@ -23,7 +23,7 @@ public class MessageControl implements DataConsumer {
     private static int DEFAULT_RETRIES = 2;
     private static int DEFAULT_TIMEOUT = 500;
 
-    public boolean DEBUG = true;
+    public boolean DEBUG = false;
 
     private Transport transport;
     private MessageParser messageParser;

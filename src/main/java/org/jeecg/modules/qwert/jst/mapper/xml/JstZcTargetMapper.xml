@@ -56,4 +56,10 @@
 		   group by t1.tagname) gf left join gfcategory gc on gf.tagname=gc.target_no
 		   where gc.dev_no is not null and gc.dev_no=#{dev_no}
 	</select>
+	<select id="queryJztListFromPos" parameterType="Object"  resultMap="JstZcTarget2">
+		select jzt.id,jzt.dev_type,jzt.dev_no,jzt.target_no,jzt.target_name from jst_zc_target jzt
+			where jzt.target_no like "gf%" and jzt.dev_no in
+				(select dev_no from jst_zc_dev where dev_pos =#{dev_pos})
+			and jzt.display_mode=3 order by jzt.dev_no,jzt.target_no
+	</select>
 </mapper>

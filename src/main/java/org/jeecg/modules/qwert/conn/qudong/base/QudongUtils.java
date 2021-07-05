@@ -27,6 +27,44 @@ public class QudongUtils {
         return master;
     }
     @Nullable
+    public static String getPmBus(byte[] retmessage, String rm2) {
+        String rm = null;
+        if(rm2.indexOf("_")!=-1){
+            String[] rm3=rm2.split("_");
+            byte trm = retmessage[Integer.parseInt(rm3[0])] ;
+            rm=(trm & 0xff)+"";
+        }
+        if(rm2.indexOf("$")!=-1){
+            String[] rm3=rm2.split("\\$");
+            rm=retmessage[Integer.parseInt(rm3[0])-1]+"";
+        }
+        return rm;
+    }
+    public static String getKstarString(String retmessage, String rm2) {
+        String rm = null;
+        if(rm2.indexOf("_")!=-1) {
+            String[] rm3 = rm2.split("_");
+            rm = retmessage.substring(Integer.parseInt(rm3[0]) - 1, Integer.parseInt(rm3[0]) + Integer.parseInt(rm3[1]) -1);
+        }
+        if(rm2.indexOf("$")!=-1) {
+            String[] rm3 = rm2.split("\\$");
+            int rm4 = Integer.parseInt(rm3[0]) - 1;
+            int rm5 = Integer.parseInt(rm3[0]) + Integer.parseInt(rm3[1]);
+            rm = retmessage.substring(Integer.parseInt(rm3[0]) - 1, Integer.parseInt(rm3[0]) + Integer.parseInt(rm3[1])-1);
+        }
+        return rm;
+    }
+
+    public static String getDeltaString(String retmessage, String rm2) {
+        int rn = rm2.lastIndexOf(",");
+        String rm3=rm2.substring(rn+1);
+        String rm4[]=rm3.split("\\)");
+        String rm5=rm4[0];
+        String[] rm6 = retmessage.split(";");
+        return rm6[Integer.parseInt(rm5)];
+    }
+
+    @Nullable
     public static String getM7000DString(String retmessage, String rm2) {
         String rm=null;
         int pos=0;

@@ -82,4 +82,10 @@ public class JstZcTargetServiceImpl extends ServiceImpl<JstZcTargetMapper, JstZc
 		return pvList;
 	}
 
+	@Override
+	public List<JstZcTarget2> queryJztListFromPos(String devPos) {
+		List<JstZcTarget2> jztList = this.jstZcTargetMapper.queryJztListFromPos(devPos);
+		return jztList;
+	}
+
 }

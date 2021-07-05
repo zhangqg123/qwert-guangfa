@@ -28,4 +28,6 @@ public interface IJstZcTargetService extends IService<JstZcTarget> {
     List<GuangfaBranch> queryGfBranch();
 
     List<GuangfaBranch> queryGfTarget(String from, String dev_no);
+
+    List<JstZcTarget2> queryJztListFromPos(String devPos);
 }

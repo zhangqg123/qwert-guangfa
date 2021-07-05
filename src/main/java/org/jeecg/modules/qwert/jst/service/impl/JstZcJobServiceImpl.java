@@ -2,7 +2,10 @@ package org.jeecg.modules.qwert.jst.service.impl;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.sun.jna.Library;
+import com.sun.jna.Native;
 import org.fusesource.stomp.jms.StompJmsConnectionFactory;
 import org.fusesource.stomp.jms.StompJmsDestination;
 import org.jeecg.common.constant.CommonConstant;
@@ -25,13 +28,20 @@ import org.jeecg.modules.qwert.conn.modbus4j.test.TestSerialPortWrapper;
 import org.jeecg.modules.qwert.conn.qudong.QwertMaster;
 import org.jeecg.modules.qwert.conn.qudong.base.QudongUtils;
 import org.jeecg.modules.qwert.conn.qudong.exception.QudongTransportException;
+import org.jeecg.modules.qwert.conn.qudong.msg.ReadDianzongRequest;
+import org.jeecg.modules.qwert.conn.qudong.msg.ReadDianzongResponse;
 import org.jeecg.modules.qwert.conn.qudong.msg.ReadM7000Request;
 import org.jeecg.modules.qwert.conn.qudong.msg.ReadM7000Response;
+import org.jeecg.modules.qwert.conn.qudong.msg.delta.ReadDeltaRequest;
+import org.jeecg.modules.qwert.conn.qudong.msg.delta.ReadDeltaResponse;
+import org.jeecg.modules.qwert.conn.qudong.msg.kstar.ReadKstarRequest;
+import org.jeecg.modules.qwert.conn.qudong.msg.kstar.ReadKstarResponse;
 import org.jeecg.modules.qwert.conn.snmp.SnmpData;
 import org.jeecg.modules.qwert.jst.entity.*;
 import org.jeecg.modules.qwert.jst.mapper.JstZcDevMapper;
 import org.jeecg.modules.qwert.jst.service.*;
 import org.jeecg.modules.qwert.jst.utils.JstConstant;
+import org.jeecg.modules.qwert.jst.work.TestDll1;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -62,6 +72,8 @@ public class JstZcJobServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
 	private IJstZcAlarmService jstZcAlarmService;
 	@Autowired
 	private IJstZcConfigService jstZcConfigService;
+	@Autowired
+	private IJstZcDevService jstZcDevService;
     @Autowired
     DemoRepository repository;
     
@@ -98,65 +110,274 @@ public class JstZcJobServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
 	}
 
 	@Override
-	public void readDev(String devId) {
-		long start, end;
-		start = System.currentTimeMillis();
-		List resList = new ArrayList();
-		JstZcDev jzd = getById(devId);
-		String devNo=jzd.getDevNo();
-		String devName=jzd.getDevName();
-		String catNo = jzd.getDevCat();
-		String orgUser = jzd.getOrgUser();
-		String modNo=jzd.getModNo();
-		if(modNo==null||modNo.equals("")) {
-			modNo="blank";
-		}
-		String conInfo = jzd.getConInfo();
-		JSONObject jsonConInfo = JSON.parseObject(conInfo);
-		String type = jsonConInfo.getString("type");
-		String proType = jsonConInfo.getString("proType");
-		String stime = jsonConInfo.getString("sleeptime");
-		int sleeptime= JstConstant.sleeptime;
-		if(stime!=null && !stime.equals("")) {
-			sleeptime=Integer.parseInt(stime);
-		}
+	public void readDev(String devNos) {
+		long nstart, nend;
+		nstart = System.currentTimeMillis();
+		String[] tmpDevNos = devNos.split(",");
+		for(int i=0;i<tmpDevNos.length;i++) {
+			long start, end;
+			start = System.currentTimeMillis();
+
+			String devNo = tmpDevNos[i];
+			List resList = new ArrayList();
+			//	JstZcDev jzd = getById(devId);
+			//	String devNo=jzd.getDevNo();
+			QueryWrapper<JstZcDev> queryWrapper = new QueryWrapper<JstZcDev>();
+			queryWrapper.eq("dev_no", devNo);
+			JstZcDev jzd = jstZcDevService.getOne(queryWrapper);
+			String devName = jzd.getDevName();
+			String catNo = jzd.getDevCat();
+			String orgUser = jzd.getOrgUser();
+			String modNo = jzd.getModNo();
+			if (modNo == null || modNo.equals("")) {
+				modNo = "blank";
+			}
+			String conInfo = jzd.getConInfo();
+			JSONObject jsonConInfo = JSON.parseObject(conInfo);
+			String type = jsonConInfo.getString("type");
+			String proType = jsonConInfo.getString("proType");
+			String stime = jsonConInfo.getString("sleeptime");
+			int sleeptime = JstConstant.sleeptime;
+			if (stime != null && !stime.equals("")) {
+				sleeptime = Integer.parseInt(stime);
+			}
 
 
-		List<JstZcTarget> jztCollect = null;
-		if(orgUser.equals("guangfa")){
-			jztCollect = jstZcTargetService.queryJztList5(devNo);
-		}
-		if(orgUser.equals("jinshitan")){
-			jztCollect = jstZcTargetService.queryJztList4(catNo);
-		}
+			List<JstZcTarget> jztCollect = null;
+			if (orgUser.equals("guangfa")) {
+				jztCollect = jstZcTargetService.queryJztList5(devNo);
+			}
+			if (orgUser.equals("jinshitan")) {
+				jztCollect = jstZcTargetService.queryJztList4(catNo);
+			}
+			boolean dbflag = false;
+			boolean alarmflag=false;
+			String alarm=null;
+			if (proType.toUpperCase().equals("7000D")) {
+				alarm=handleM7000d(jsonConInfo, resList, jztCollect);
+				alarmflag=true;
+				dbflag=true;
+			}
+			if (proType.toUpperCase().equals("PMBUS")) {
+				handlePmbus(jztList, resList, jsonConInfo);
+				alarmflag=true;
+				dbflag=true;
+			}
+			if (proType.toUpperCase().equals("KSTAR")) {
+				alarm=handlekStar(jztList, resList, jsonConInfo);
+				alarmflag=true;
+				dbflag=true;
+			}
+			if (proType.toUpperCase().equals("DELTA")) {
+				alarm=handleDelta(jztList, resList, jsonConInfo);
+				alarmflag=true;
+				dbflag=true;
+			}
+			if (proType.toUpperCase().equals("MODBUS")) {
+				handleModbus(type, resList, devNo, devName, catNo, jsonConInfo, sleeptime,
+						jztCollect);
+				dbflag=true;
+			}
 
-		if (proType.toUpperCase().equals("7000D")) {
-			handleM7000d(jsonConInfo, resList, jztCollect);
+			if (proType.toUpperCase().equals("SNMP")) {
+				handleSnmp(type, resList, devNo, devName, catNo, jsonConInfo, jztCollect);
+				dbflag=true;
+			}
+			if(dbflag||alarmflag) {
+				if(alarmflag) {
+					String[] tmpAlarm = alarm.split("::");
+					String alarmNo = tmpAlarm[0];
+					String alarmValue = tmpAlarm[1];
+					JstZcAlarm jstZcAlarm = new JstZcAlarm();
+					jstZcAlarm.setDevNo(devNo);
+					jstZcAlarm.setDevName(devName);
+					jstZcAlarm.setCatNo(catNo);
+					jstZcAlarm.setTargetNo(alarmNo);
+					jstZcAlarm.setAlarmValue(alarmValue);
+					jstZcAlarm.setSendTime(new Date());
+					jstZcAlarm.setSendType("2");
+					jstZcAlarmService.saveSys(jstZcAlarm);
+				}
+				handleDbMq(resList, devNo);
+			}
+			end = System.currentTimeMillis();
+			System.out.println(devName+" 用时:" + (end - start) + "(ms)");
 		}
-		if (proType.toUpperCase().equals("MODBUS")) {
-			handleModbus(type, resList, devNo, devName, catNo, jsonConInfo, sleeptime,
-					jztCollect);
-		}
-
-		if (proType.toUpperCase().equals("SNMP")) {
-			handleSnmp(type, resList, devNo, devName, catNo, jsonConInfo, jztCollect);
-		}
-		end = System.currentTimeMillis();
-		System.out.println(devName+" 开始时间:" + start + "; 结束时间:" + end + "; 用时:" + (end - start) + "(ms)");
+		nend = System.currentTimeMillis();
+		System.out.println(devNos+" 开始时间:" + nstart + "; 结束时间:" + nend + "; 用时:" + (nend - nstart) + "(ms)");
 	}
 
-	private void handleM7000d(JSONObject jsonConInfo, List resList, List<JstZcTarget> jztCollect) {
+	private String handlekStar(List<JstZcTarget> jztList, List resList, JSONObject jsonConInfo) {
 		int slaveId = Integer.parseInt(jsonConInfo.getString("slave"));
 		QwertMaster master = QudongUtils.getQwertMaster(jsonConInfo);
 		String tmpInstruct=null;
 		String retmessage=null;
+		String alarmNo=null;
+		String alarmValue=null;
 		for (int i = 0; i < jztList.size(); i++) {
 			JstZcTarget jzt = jztList.get(i);
 			String instruct = jzt.getInstruct();
+			String devNo=jzt.getDevNo();
+			String tmpAlarm=null;
+			if(instruct.equals(tmpInstruct)){
+				String rm1 = jzt.getTargetNo();
+				String rm2 = jzt.getAddress();
+				String rm = QudongUtils.getKstarString(retmessage, rm2);
+				tmpAlarm=getAlarm(jzt, devNo, rm);
+				String[] ta = tmpAlarm.split(":::");
+				alarmNo+=ta[0];
+				alarmValue+=ta[1];
+				resList.add(rm1+"="+rm);
+				continue;
+			}
+			try {
+				ReadKstarRequest request = new ReadKstarRequest(slaveId, 81,49);
+				ReadKstarResponse response = (ReadKstarResponse) master.send(request);
+
+				if (response.isException())
+					System.out.println("Exception response: message=" + response.getExceptionMessage());
+				else{
+					System.out.println(response.getMessage());
+					retmessage =  response.getMessage();
+					String rm1 = jzt.getTargetNo();
+					String rm2 = jzt.getAddress();
+					String rm = QudongUtils.getKstarString(retmessage, rm2);
+					tmpAlarm=getAlarm(jzt, devNo, rm);
+					String[] ta = tmpAlarm.split(":::");
+					alarmNo+=ta[0];
+					alarmValue+=ta[1];
+					resList.add(rm1+"="+rm);
+				}
+			}
+			catch (QudongTransportException e) {
+				e.printStackTrace();
+			}
+			tmpInstruct = jzt.getInstruct();
+		}
+		return alarmNo+"::"+alarmValue;
+	}
+
+	private void handlePmbus(List<JstZcTarget> jztList, List resList, JSONObject jsonConInfo) {
+		int slaveId = Integer.parseInt(jsonConInfo.getString("slave"));
+		QwertMaster master = QudongUtils.getQwertMaster(jsonConInfo);
+		String tmpInstruct=null;
+		byte[] retmessage = null;
+		String alarmNo=null;
+		String alarmValue=null;
+		for (int i = 0; i < jztList.size(); i++) {
+			JstZcTarget jzt = jztList.get(i);
+			String instruct = jzt.getInstruct();
+			String devNo=jzt.getDevNo();
+			String tmpAlarm=null;
+			if(instruct.equals(tmpInstruct)){
+				String rm1 = jzt.getTargetNo();
+				String rm2 = jzt.getAddress();
+				String rm = QudongUtils.getPmBus(retmessage, rm2);
+				tmpAlarm=getAlarm(jzt, devNo, rm);
+				String[] ta = tmpAlarm.split(":::");
+				alarmNo+=ta[0];
+				alarmValue+=ta[1];
+				resList.add(rm1+"="+rm);
+				continue;
+			}
+			String[] tmp = instruct.split("/");
+			try {
+				ReadDianzongRequest request = new ReadDianzongRequest(2.0f,slaveId, Integer.parseInt(tmp[0]), Integer.parseInt(tmp[1]),Integer.parseInt(tmp[2]));
+				ReadDianzongResponse response = (ReadDianzongResponse) master.send(request);
+
+				if (response.isException())
+					System.out.println("Exception response: message=" + response.getExceptionMessage());
+				else{
+					System.out.println(Arrays.toString(response.getShortData()));
+					//			resList.add(Arrays.toString(response.getShortData()));
+					retmessage =  response.getRetData();
+					String rm1 = jzt.getTargetNo();
+					String rm2 = jzt.getAddress();
+					String rm = QudongUtils.getPmBus(retmessage, rm2);
+					tmpAlarm=getAlarm(jzt, devNo, rm);
+					String[] ta = tmpAlarm.split(":::");
+					alarmNo+=ta[0];
+					alarmValue+=ta[1];
+					resList.add(rm1+"="+rm);
+				}
+			}
+			catch (QudongTransportException e) {
+				e.printStackTrace();
+			}
+			tmpInstruct = jzt.getInstruct();
+		}
+	}
+
+	private String handleDelta(List<JstZcTarget> jztList, List resList, JSONObject jsonConInfo) {
+		int slaveId = Integer.parseInt(jsonConInfo.getString("slave"));
+		QwertMaster master = QudongUtils.getQwertMaster(jsonConInfo);
+		String tmpInstruct=null;
+		String retmessage=null;
+		String alarmNo=null;
+		String alarmValue=null;
+		for (int i = 0; i < jztList.size(); i++) {
+			JstZcTarget jzt = jztList.get(i);
+			String instruct = jzt.getInstruct();
+			String devNo=jzt.getDevNo();
+			String tmpAlarm=null;
+			if(instruct.equals(tmpInstruct)){
+				String rm1 = jzt.getTargetNo();
+				String rm2 = jzt.getAddress();
+				String rm = QudongUtils.getDeltaString(retmessage, rm2);
+				tmpAlarm=getAlarm(jzt, devNo, rm);
+				String[] ta = tmpAlarm.split(":::");
+				alarmNo+=ta[0];
+				alarmValue+=ta[1];
+				resList.add(rm1+"="+rm);
+				continue;
+			}
+			try {
+				ReadDeltaRequest request = new ReadDeltaRequest(slaveId, instruct);
+				ReadDeltaResponse response = (ReadDeltaResponse) master.send(request);
+
+				if (response.isException())
+					System.out.println("Exception response: message=" + response.getExceptionMessage());
+				else{
+					//				System.out.println(response.getMessage());
+					retmessage =  response.getMessage();
+					String rm1 = jzt.getTargetNo();
+					String rm2 = jzt.getAddress();
+					String rm = QudongUtils.getDeltaString(retmessage, rm2);
+					tmpAlarm=getAlarm(jzt, devNo, rm);
+					String[] ta = tmpAlarm.split(":::");
+					alarmNo+=ta[0];
+					alarmValue+=ta[1];
+					resList.add(rm1+"="+rm);
+				}
+			}
+			catch (QudongTransportException e) {
+				e.printStackTrace();
+			}
+			tmpInstruct = jzt.getInstruct();
+		}
+		return alarmNo+"::"+alarmValue;
+	}
+
+	private String handleM7000d(JSONObject jsonConInfo, List resList, List<JstZcTarget> jztCollect) {
+		int slaveId = Integer.parseInt(jsonConInfo.getString("slave"));
+		QwertMaster master = QudongUtils.getQwertMaster(jsonConInfo);
+		String tmpInstruct=null;
+		String retmessage=null;
+		String alarmNo=null;
+		String alarmValue=null;
+		for (int i = 0; i < jztList.size(); i++) {
+			JstZcTarget jzt = jztList.get(i);
+			String instruct = jzt.getInstruct();
+			String devNo=jzt.getDevNo();
+			String tmpAlarm=null;
 			if(instruct.equals(tmpInstruct)){
 				String rm1 = jzt.getTargetNo();
 				String rm2 = jzt.getAddress();
 				String rm = QudongUtils.getM7000DString(retmessage, rm2);
+				tmpAlarm=getAlarm(jzt, devNo, rm);
+				String[] ta = tmpAlarm.split(":::");
+				alarmNo+=ta[0];
+				alarmValue+=ta[1];
 				resList.add(rm1+"="+rm);
 				continue;
 			}
@@ -172,6 +393,10 @@ public class JstZcJobServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
 					String rm2 = jzt.getAddress();
 					// 不清楚应该是低位在前，高位在前
 					String rm = QudongUtils.getM7000DString(retmessage, rm2);
+					tmpAlarm=getAlarm(jzt, devNo, rm);
+					String[] ta = tmpAlarm.split(":::");
+					alarmNo+=ta[0];
+					alarmValue+=ta[1];
 					resList.add(rm1+"="+rm);
 				}
 			}
@@ -180,6 +405,46 @@ public class JstZcJobServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
 			}
 			tmpInstruct = jzt.getInstruct();
 		}
+		return alarmNo+"::"+alarmValue;
+	}
+
+	private String getAlarm(JstZcTarget jzt, String devNo, String rm) {
+		String tmpAlarm=null;
+		String rkey = devNo + "::" + jzt.getTargetNo();
+		String evt = jzt.getEvt01();
+		String rvalue = rm;
+		Object keyValue = redisUtil.get(rkey);
+		if(evt!=null) {
+			if (keyValue == null || !keyValue.toString().equals(rvalue)) {
+				redisUtil.set(rkey, rvalue);
+				if(keyValue!=null) {
+					String tmpAlarmNo = jzt.getId() + ",";
+					String message = evt;
+					if (rvalue.equals("0")) {
+						message = jzt.getEvt10();
+					}
+					String tmpAlarmValue = jzt.getTargetName() + "-" + message + "-" + keyValue + "to" + rvalue + ",";
+					tmpAlarm=tmpAlarmNo+":::"+tmpAlarmValue;
+				}
+			}
+		}else{
+			redisUtil.set(rkey, rvalue);
+			if(keyValue!=null){
+				if(Integer.parseInt((String) keyValue)>jzt.getValMax()){
+					String tmpAlarmNo = jzt.getId() + ",";
+					String message = jzt.getHighInfo();
+					String tmpAlarmValue = jzt.getTargetName() + "-" + message + "-" + keyValue + "to" + rvalue + ",";
+					tmpAlarm=tmpAlarmNo+":::"+tmpAlarmValue;
+				}
+				if(Integer.parseInt((String) keyValue)<jzt.getValMin()){
+					String tmpAlarmNo = jzt.getId() + ",";
+					String message = jzt.getLowInfo();
+					String tmpAlarmValue = jzt.getTargetName() + "-" + message + "-" + keyValue + "to" + rvalue + ",";
+					tmpAlarm=tmpAlarmNo+":::"+tmpAlarmValue;
+				}
+			}
+		}
+		return tmpAlarm;
 	}
 
 
@@ -255,17 +520,18 @@ public class JstZcJobServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
 			}else {
 				break;
 			}
-			handelDbMq(type, resList, devNo);
+//			handleDbMq(type, resList, devNo);
 		}
 	}
 
-	private void handelDbMq(String type, List resList, String devNo) {
+	private void handleDbMq(List resList, String devNo) {
 		String resValue = org.apache.commons.lang.StringUtils.join(resList.toArray(),";");
 /*		Audit audit = new Audit();
 		audit.setDevNo(devNo);
 		audit.setAuditValue(resValue);
 		audit.setAuditTime(new Date());
 		repository.insertAudit(audit); */
+		redisUtil.set(devNo,resValue);
 		redisUtil.set(devNo+"::"+ DateUtils.now(),resValue);
 		redisUtil.expire(devNo+"::"+ DateUtils.now(), 7200);
 
@@ -301,7 +567,7 @@ public class JstZcJobServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
 			wrapper = new TestSerialPortWrapper(commPortId, baudRate, flowControlIn, flowControlOut, dataBits, stopBits, parity);
 		}
 		IpParameters ipParameters = null;
-		if(type.equals("SOCKET")||type.equals("MODBUSTCP")) {
+		if(type.equals("SOCKET")||type.equals("MODBUSTCP")||type.equals("TCP")) {
 			String ipAddress = jsonConInfo.getString("ipAddress");
 			String port = jsonConInfo.getString("port");
 			ipParameters = new IpParameters();
@@ -318,7 +584,7 @@ public class JstZcJobServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
 		if(type.equals("MODBUSASCII")) {
 			master = modbusFactory.createAsciiMaster(wrapper);
 		}
-		if(type.equals("MODBUSTCP")||type.equals("SOCKET")) {
+		if(type.equals("MODBUSTCP")||type.equals("SOCKET")||type.equals("TCP")) {
 			master = modbusFactory.createTcpMaster(ipParameters, false);
 		}
 		boolean flag = false;
@@ -459,6 +725,9 @@ public class JstZcJobServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
 					alarm=trackAlarm(devNo,resList, jztCollect);
 				}
 				if(alarm!=null) {
+//					AlarmSend as=new AlarmSend(alarm);
+//					new Thread(as).start();
+
 					String[] tmpAlarm = alarm.split("::");
 					String alarmNo=tmpAlarm[0];
 					String alarmValue=tmpAlarm[1];
@@ -538,7 +807,7 @@ public class JstZcJobServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
 		} finally {
 			master.destroy();
 		}
-		handelDbMq(type, resList, devNo);
+//		handleDbMq(type, resList, devNo);
 	}
 
 	private String trackAlarm(String devNo, List resList, List<JstZcTarget> jztCollect) {
@@ -709,7 +978,7 @@ public class JstZcJobServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
 						}else {
 							r4=Integer.parseInt(rvalue);
 						}
-						if(jzt.getValMax()>0) {
+						if(jzt.getValMax()!=null && jzt.getValMax()>0) {
 							Object keyValue = redisUtil.get(rkey);
 							String flag = null;
 							if (r4 > jzt.getValMax()) {
@@ -779,5 +1048,23 @@ public class JstZcJobServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
 		}
 		return alarm;
 	}
+	static class AlarmSend implements Runnable{
+		private String alarm;
+		AlarmSend(String alarm){
+			this.alarm=alarm;
+		}
+/*		public interface TestDll1 extends Library {
 
+			TestDll1 INSTANCE = (TestDll1) Native.loadLibrary("PhoneDll.dll", TestDll1.class);
+			public int Dial(String phones,String alarmMessage);
+		}*/
+		public void run(){
+			System.out.println("线程输出:"+alarm);
+			System.setProperty("jna.encoding", "GBK");
+			String phones="13898480908";
+			String alarmMessage="2KT8,过滤网堵报警开关,,";
+			int sret = TestDll1.INSTANCE.Dial(phones, alarmMessage);
+			System.out.println("sret=" + sret);
+		}
+	}
 }

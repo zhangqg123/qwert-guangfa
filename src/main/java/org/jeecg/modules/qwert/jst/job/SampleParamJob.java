@@ -5,6 +5,7 @@ import org.jeecg.common.util.DateUtils;
 import org.jeecg.modules.qwert.jst.service.IJstZcDevService;
 import org.jeecg.modules.qwert.jst.service.IJstZcJobService;
 import org.jeecg.modules.qwert.jst.utils.JstConstant;
+import org.jeecg.modules.qwert.jst.work.TestDll1;
 import org.quartz.Job;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
@@ -34,6 +35,15 @@ public class SampleParamJob implements Job {
 
 		log.info(String.format("welcome %s! Jeecg-Boot 带参数定时任务 SampleParamJob !   时间:" + DateUtils.now(), this.parameter));
 		JstConstant.debugflag=1;
-		jstZcJobService.readCat(parameter);
+//		jstZcJobService.readCat(parameter);
+		System.setProperty("jna.encoding", "GBK");
+//		String str = "中午吃什么？";
+		String phones="13898480908";
+		String alarmMessage="2KT8,过滤网堵报警开关,,";
+
+	//	int sret = TestDll1.INSTANCE.SendSms(4, 115200,"15699582810", str);
+		int sret = TestDll1.INSTANCE.Dial(phones, alarmMessage);
+
+		System.out.println("sret=" + sret);
 	}
 }

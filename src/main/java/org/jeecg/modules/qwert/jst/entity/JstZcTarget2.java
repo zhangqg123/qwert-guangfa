@@ -27,9 +27,11 @@ import lombok.experimental.Accessors;
 public class JstZcTarget2 implements Serializable {
     private static final long serialVersionUID = 1L;
     private java.lang.String id;
+    private java.lang.String devNo;
     private java.lang.String targetNo;
     private java.lang.String targetName;
     private java.lang.String espConfig;
     private java.lang.String yinzi;
     private java.lang.String instruct;
+    private java.lang.String value;
 }

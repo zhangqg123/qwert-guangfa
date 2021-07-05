@@ -56,6 +56,11 @@ public class JstZcTarget implements Serializable {
 	@Excel(name = "单位", width = 15)
     @ApiModelProperty(value = "单位")
     private java.lang.String unit;
+	/**显示模式*/
+	@Excel(name = "显示模式", width = 15)
+	@ApiModelProperty(value = "显示模式")
+	@Dict(dicCode = "display_mode")
+	private java.lang.Integer displayMode;
 	/**是否采集*/
 	@Excel(name = "是否采集", width = 15)
     @ApiModelProperty(value = "是否采集")
@@ -100,6 +105,12 @@ public class JstZcTarget implements Serializable {
 	@Excel(name = "报警高限", width = 15)
 	@ApiModelProperty(value = "报警高限")
 	private java.lang.Integer valMax;
+	@Excel(name = "低限信息", width = 15)
+	@ApiModelProperty(value = "低限信息")
+	private java.lang.String lowInfo;
+	@Excel(name = "高限信息", width = 15)
+	@ApiModelProperty(value = "高限信息")
+	private java.lang.String highInfo;
 
 	/**采集时间*/
 	@Excel(name = "采集时间", width = 15)
