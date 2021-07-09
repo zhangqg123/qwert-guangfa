@@ -285,7 +285,13 @@ public class JstZcDevController extends JeecgController<JstZcDev, IJstZcDevServi
 				if (response.isException())
 					System.out.println("Exception response: message=" + response.getExceptionMessage());
 				else{
-					retmessage =  response.getBinData().substring(0,8);
+					String rbd=null;
+					if(response.getBinData().length()<8) {
+						rbd=response.getBinData()+"00";
+					}else {
+						rbd=response.getBinData();
+					}
+					retmessage =  rbd.substring(0,8);
 					String rm1 = jzt.getTargetNo();
 					String rm2 = jzt.getAddress();
 					// 不清楚应该是低位在前，高位在前
