@@ -93,23 +93,23 @@ public class QwertFcController extends JeecgController<QwertFc, IQwertFcService>
 			 		break;
 				}
 				 String r2 = r1[i];
-				 if(r2!=null&&r2.indexOf("{")!=-1){
-					r2=r2.substring(1,r2.length()-1);
-					 String[] r3 = r2.split(",");
-					for(int j=0;j<r3.length;j++){
-						String[] r4 = r3[j].split("=");
-						if(r4[0].equals(tc.getId())){
-							JstZcTarget2 jzt2 = new JstZcTarget2();
-							jzt2.setId(r4[0]);
-							jzt2.setTargetNo(tc.getTargetNo());
-							jzt2.setTargetName(tc.getTargetName());
-							jzt2.setValue(r4[1]);
-							jztList.add(jzt2);
-							findflag=true;
-							break;
-						}
-					}
+				 if(r2!=null&&r2.indexOf("{")!=-1) {
+					 r2 = r2.substring(1, r2.length() - 1);
 				 }
+				 String[] r3 = r2.split(",");
+				for(int j=0;j<r3.length;j++){
+					String[] r4 = r3[j].split("=");
+					if(r4[0].equals(tc.getId())){
+						JstZcTarget2 jzt2 = new JstZcTarget2();
+						jzt2.setId(r4[0]);
+						jzt2.setTargetNo(tc.getTargetNo());
+						jzt2.setTargetName(tc.getTargetName());
+						jzt2.setValue(r4[1]);
+						jztList.add(jzt2);
+						findflag=true;
+						break;
+					}
+				}
 			 }
 		 }
 //		 List<JstZcTarget> jztList = (List<JstZcTarget>) jstZcTargetService.listByIds(jztIdList);
