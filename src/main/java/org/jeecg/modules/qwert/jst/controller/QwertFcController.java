@@ -107,7 +107,17 @@ public class QwertFcController extends JeecgController<QwertFc, IQwertFcService>
 						jzt2.setId(r4[0]);
 						jzt2.setTargetNo(tc.getTargetNo());
 						jzt2.setTargetName(tc.getTargetName());
-						jzt2.setValue(r4[1]);
+						if(r4.length>1) {
+							String yinzi = tc.getYinzi();
+							if(yinzi!=null){
+								float value = Float.parseFloat(r4[1]) / Integer.parseInt(yinzi);
+								jzt2.setValue(value+"");
+							}else{
+								jzt2.setValue(r4[1]);
+							}
+						}else{
+							jzt2.setValue(null);
+						}
 						jztList.add(jzt2);
 						findflag=true;
 						break;
