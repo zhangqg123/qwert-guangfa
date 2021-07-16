@@ -106,13 +106,13 @@ public class ReadDianzongResponse extends ReadResponse {
 	        if (queue.size() < numberOfBytes)
 	            throw new ArrayIndexOutOfBoundsException();
 // 下面是正式场景代码
-//	        data = new byte[numberOfBytes];
-//	        queue.pop(7);
-//	        queue.pop(data);
+	        data = new byte[numberOfBytes];
+	        queue.pop(7);
+	        queue.pop(data);
 //	模拟数据
-			byte tmpbyte = QwertUtils.hex2byte("de");
+//			byte tmpbyte = QwertUtils.hex2byte("de");
 //			data=new byte[]{0,0,0,0,0,0,0,0,0,0,0,0,0,0,7,tmpbyte,0,0,0,0,0,0,0,0,0};
-			data=new byte[]{1,9,0,0,1,1,1,0,0,0,2};
+//			data=new byte[]{1,9,0,0,1,1,1,0,0,0,2};
         }else {
             int numberOfBytes = QwertUtils.popUnsignedByte(queue);
             if (queue.size() < numberOfBytes)

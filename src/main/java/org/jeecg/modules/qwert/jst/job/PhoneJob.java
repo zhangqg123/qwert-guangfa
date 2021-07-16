@@ -6,6 +6,7 @@ import org.jeecg.modules.qwert.jst.service.IJstZcDevService;
 import org.jeecg.modules.qwert.jst.service.IJstZcJobService;
 import org.jeecg.modules.qwert.jst.utils.JstConstant;
 import org.jeecg.modules.qwert.jst.work.TestDll1;
+import org.quartz.DisallowConcurrentExecution;
 import org.quartz.Job;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
@@ -17,7 +18,8 @@ import org.springframework.beans.factory.annotation.Autowired;
  * @Author Scott
  */
 @Slf4j
-public class SampleParamJob implements Job {
+@DisallowConcurrentExecution
+public class PhoneJob implements Job {
 
 	/**
 	 * 若参数变量名修改 QuartzJobController中也需对应修改
@@ -37,7 +39,7 @@ public class SampleParamJob implements Job {
 		JstConstant.debugflag=1;
 //		jstZcJobService.readCat(parameter);
 		System.setProperty("jna.encoding", "GBK");
-//		String str = "中午吃什么？";
+		String str = "中午吃什么？";
 		String phones="13898480908";
 		String alarmMessage="2KT8,过滤网堵报警开关,,";
 
@@ -45,5 +47,6 @@ public class SampleParamJob implements Job {
 		int sret = TestDll1.INSTANCE.Dial(phones, alarmMessage);
 
 		System.out.println("sret=" + sret);
+
 	}
 }

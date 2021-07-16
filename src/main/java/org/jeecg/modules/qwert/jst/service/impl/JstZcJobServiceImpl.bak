@@ -450,15 +450,13 @@ public class JstZcJobServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
 			if(keyValue!=null){
 				if(Float.parseFloat((String) rvalue)>jzt.getValMax()){
 					String tmpAlarmNo = jzt.getId() + ",";
-		//			String message = String.format(jzt.getHighInfo(),rvalue);
-					String message=jzt.getTargetName()+"过高,等于"+rvalue;
+					String message = String.format(jzt.getHighInfo(),rvalue);
 					String tmpAlarmValue = jzt.getTargetName() + "-" + message + "-" + keyValue + "to" + rvalue + ",";
 					tmpAlarm=tmpAlarmNo+":::"+tmpAlarmValue;
 				}
 				if(Float.parseFloat((String) rvalue)<jzt.getValMin()){
 					String tmpAlarmNo = jzt.getId() + ",";
-	//				String message = String.format(jzt.getLowInfo(),rvalue);
-					String message=jzt.getTargetName()+"过低,等于"+rvalue;
+					String message = String.format(jzt.getLowInfo(),rvalue);
 					String tmpAlarmValue = jzt.getTargetName() + "-" + message + "-" + keyValue + "to" + rvalue + ",";
 					tmpAlarm=tmpAlarmNo+":::"+tmpAlarmValue;
 				}

@@ -22,9 +22,6 @@ import org.fusesource.stomp.jms.StompJmsConnectionFactory;
 import org.fusesource.stomp.jms.StompJmsDestination;
 import org.jeecg.modules.qwert.conn.modbus4j.test.TestSerialPortWrapper;
 import org.jeecg.modules.qwert.conn.snmp.SnmpData;
-import org.jeecg.modules.qwert.conn.dbconn.mongo.common.model.Alarm;
-import org.jeecg.modules.qwert.conn.dbconn.mongo.common.model.Audit;
-import org.jeecg.modules.qwert.conn.dbconn.mongo.repository.impl.DemoRepository;
 import org.jeecg.modules.qwert.jst.entity.*;
 import org.jeecg.modules.qwert.jst.mapper.JstZcDevMapper;
 import org.jeecg.modules.qwert.jst.service.IJstZcAlarmService;
@@ -67,9 +64,7 @@ public class JstZcDevServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
 	private IJstZcAlarmService jstZcAlarmService;
 	@Autowired
 	private IJstZcConfigService jstZcConfigService;
-    @Autowired
-    DemoRepository repository;
-    
+
     private List<JstZcCat> jzcList;
     private List<JstZcDev> jzdList;    
     private List<JstZcTarget> jztList;
@@ -363,13 +358,8 @@ public class JstZcDevServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
 
 	private void handelDbMq(String type,Session session, MessageProducer producer, MessageProducer producer2, List resList, String devNo) throws JMSException {
 		String resValue = org.apache.commons.lang.StringUtils.join(resList.toArray(),";");
-		Audit audit = new Audit();
-		audit.setDevNo(devNo);
-		audit.setAuditValue(resValue);
-		audit.setAuditTime(new Date());
-		repository.insertAudit(audit);
 		if(JstConstant.activeMQ==1){
-			String messageBody = "\""+audit.getAuditValue()+"\"";
+			String messageBody = "\""+resValue+"\"";
 			String sendMessage = "[{"+"devNo:\""+devNo+"\","+"message:"+messageBody+"}]";
 			TextMessage msg = session.createTextMessage(sendMessage);
 			if (type.equals("SOCKET")) {
@@ -630,13 +620,6 @@ public class JstZcDevServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
 			e.printStackTrace();
 		}catch (Exception e)	            {
 			e.printStackTrace();
-		    Alarm alarm = new Alarm();
-//			        alarm.setId("2");
-		    alarm.setDevNo(devNo);
-		    alarm.setTargetNo("mysql");
-		    alarm.setAlarmValue("数据库保存失败");
-		    alarm.setSendTime(new Date());
-		    repository.insertAlarm(alarm);
 		} finally {
 			master.destroy();
 		}

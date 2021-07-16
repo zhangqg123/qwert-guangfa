@@ -20,9 +20,6 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.jeecg.common.api.vo.Result;
 import org.jeecg.common.system.query.QueryGenerator;
-import org.jeecg.modules.qwert.conn.dbconn.mongo.common.enums.Gender;
-import org.jeecg.modules.qwert.conn.dbconn.mongo.common.model.User;
-import org.jeecg.modules.qwert.conn.dbconn.mongo.repository.impl.DemoRepository;
 import org.jeecg.modules.qwert.tj.entity.TjDevice;
 import org.jeecg.modules.qwert.tj.entity.TjSensor;
 import org.jeecg.modules.qwert.tj.service.ITjDeviceService;
@@ -58,19 +55,7 @@ public class ArtemisPostController {
 	 */
 	private static final String ARTEMIS_PATH = "/artemis";
 
-    @Autowired
-    DemoRepository repository;
 
-    @GetMapping(value = "/hello")
-    public void hello() {
-        User user = new User();
-        user.setId("1");
-        user.setName("Make2");
-        user.setAge(22);
-        user.setGender(Gender.MALE);
-
-        repository.save(user);    	
-    }
 	/**
 	 * 调用POST请求类型(application/json)接口，这里以入侵报警事件日志为例
 	 * https://open.hikvision.com/docs/918519baf9904844a2b608e558b21bb6#e6798840

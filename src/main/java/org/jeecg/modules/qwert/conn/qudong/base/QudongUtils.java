@@ -56,12 +56,22 @@ public class QudongUtils {
     }
 
     public static String getDeltaString(String retmessage, String rm2) {
+        String retValue="0";
         int rn = rm2.lastIndexOf(",");
-        String rm3=rm2.substring(rn+1);
-        String rm4[]=rm3.split("\\)");
-        String rm5=rm4[0];
+        String rm3 = rm2.substring(rn + 1);
+        String rm4[] = rm3.split("\\)");
+        String rm5 = rm4[0];
         String[] rm6 = retmessage.split(";");
-        return rm6[Integer.parseInt(rm5)];
+        String r7 = rm6[Integer.parseInt(rm5)];
+        if (rm2.indexOf("=") == -1) {
+            retValue= r7;
+        }else{
+            String[] r8 = rm2.split("=");
+            if(r7.equals(r8[1])){
+                retValue= r7;
+            }
+        }
+        return retValue;
     }
 
     @Nullable

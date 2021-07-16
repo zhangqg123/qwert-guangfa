@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 
 import javax.annotation.Resource;
+import java.util.Set;
 
 /**
  * 示例带参定时任务
@@ -41,7 +42,12 @@ public class SampleRedisJob implements Job {
 
 		log.info(String.format("welcome %s! Jeecg-Boot 带参数定时任务 SampleParamJob !   时间:" + DateUtils.now(), this.parameter));
 		JstConstant.debugflag=1;
-		Object aaa = redisUtil.get("gf10055"); //gf10054
-		System.out.println(aaa.toString());
+		Set<String> rkset = redisUtil.keys("gf10055");
+		rkset.forEach(item -> {
+			String aaa = (String) redisUtil.get(item);
+			System.out.println(item+"="+aaa);
+		});
+//		Object aaa = redisUtil.get("gf10055"); //gf10054
+//		System.out.println(aaa.toString());
 	}
 }

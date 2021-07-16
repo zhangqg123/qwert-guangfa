@@ -36,8 +36,6 @@ import org.jeecg.modules.qwert.conn.qudong.msg.delta.ReadDeltaResponse;
 import org.jeecg.modules.qwert.conn.qudong.msg.kstar.ReadKstarRequest;
 import org.jeecg.modules.qwert.conn.qudong.msg.kstar.ReadKstarResponse;
 import org.jeecg.modules.qwert.conn.snmp.SnmpData;
-import org.jeecg.modules.qwert.conn.dbconn.mongo.common.model.Audit;
-import org.jeecg.modules.qwert.conn.dbconn.mongo.repository.impl.DemoRepository;
 import org.jeecg.modules.qwert.jst.entity.JstZcCat;
 import org.jeecg.modules.qwert.jst.entity.JstZcConfig;
 import org.jeecg.modules.qwert.jst.entity.JstZcDev;
@@ -99,9 +97,7 @@ public class JstZcDevController extends JeecgController<JstZcDev, IJstZcDevServi
 	private IJstZcAlarmService jstZcAlarmService;
 	@Autowired
 	private IJstZcConfigService jstZcConfigService;
-    @Autowired
-    DemoRepository repository;
-    
+
     private List<JstZcCat> jzcList;
     private List<JstZcDev> jzdList;    
     private List<JstZcTarget> jztList;
@@ -263,6 +259,7 @@ public class JstZcDevController extends JeecgController<JstZcDev, IJstZcDevServi
 			tmpInstruct = jzt.getInstruct();
 		}
 	}
+
 	private void handleM7000D(List<JstZcTarget> jztList, List resList, JSONObject jsonConInfo) {
 		int slaveId = Integer.parseInt(jsonConInfo.getString("slave"));
 		QwertMaster master = QudongUtils.getQwertMaster(jsonConInfo);
@@ -400,14 +397,23 @@ public class JstZcDevController extends JeecgController<JstZcDev, IJstZcDevServi
 	}
 
 	private String retString(String retmessage, String rm2) {
+		String retValue="--";
 		int rn = rm2.lastIndexOf(",");
-		String rm3=rm2.substring(rn+1);
-		String rm4[]=rm3.split("\\)");
-		String rm5=rm4[0];
+		String rm3 = rm2.substring(rn + 1);
+		String rm4[] = rm3.split("\\)");
+		String rm5 = rm4[0];
 		String[] rm6 = retmessage.split(";");
-		return rm6[Integer.parseInt(rm5)];
+		String r7 = rm6[Integer.parseInt(rm5)];
+		if (rm2.indexOf("=") == -1) {
+			retValue= r7;
+		}else{
+			String[] r8 = rm2.split("=");
+			if(r7.equals(r8[1])){
+				retValue= r7;
+			}
+		}
+		return retValue;
 	}
-
 
 	private void handleSnmp(List<JstZcTarget> jztList, List resList, JSONObject jsonConInfo) {
 		String version;
@@ -617,39 +623,6 @@ public class JstZcDevController extends JeecgController<JstZcDev, IJstZcDevServi
 		return Result.ok("ok",JstConstant.runflag);
 	}
 	
-	@AutoLog(value = "jst_zc_dev-队列")
-	@ApiOperation(value = "jst_zc_dev-队列", notes = "jst_zc_dev-队列")
-	@GetMapping(value = "/readAmq")
-	public Result<?> readAmq(HttpServletRequest req) {
-        StompJmsConnectionFactory factory = new StompJmsConnectionFactory();
-        factory.setBrokerURI("tcp://" + JstConstant.host + ":" + JstConstant.port);
-
-        Connection connection;
-		try {
-			connection = factory.createConnection(JstConstant.user, JstConstant.password);
-	        connection.start();
-	        Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-	        Destination dest = new StompJmsDestination(JstConstant.destination);
-	        MessageProducer producer = session.createProducer(dest);
-	        producer.setDeliveryMode(DeliveryMode.NON_PERSISTENT);
-			log.info(String.format(" Jeecg-Boot 普通定时任务 SampleJob !  时间:" + DateUtils.getTimestamp()));
-			List<Audit> auditList = repository.findAllAudit();
-			for(int i=0;i<auditList.size();i++) {
-				Audit audit = auditList.get(i);
-	            TextMessage msg = session.createTextMessage(audit.getAuditValue());
-	            msg.setIntProperty("id", i);
-	            producer.send(msg);
-  //              System.out.println(String.format("Sent %d messages", i));
-				
-			}
-	        connection.close();
-
-		} catch (JMSException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		return Result.ok("ok");
-	}
     private static String env(String key, String defaultValue) {
         String rc = System.getenv(key);
         if( rc== null )
