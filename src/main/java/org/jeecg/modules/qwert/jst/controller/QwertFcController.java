@@ -10,6 +10,8 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
+import com.alibaba.fastjson.JSONObject;
 import org.jeecg.common.api.vo.Result;
 import org.jeecg.common.system.query.QueryGenerator;
 import org.jeecg.common.util.RedisUtil;
@@ -77,6 +79,10 @@ public class QwertFcController extends JeecgController<QwertFc, IQwertFcService>
 		 String orgUser = jzd.getOrgUser();
 		 String catNo = jzd.getDevCat();
 		 String devName = jzd.getDevName();
+		 String conInfo = jzd.getConInfo();
+		 JSONObject jsonConInfo = JSON.parseObject(conInfo);
+		 String proType = jsonConInfo.getString("proType");
+
 		 List<JstZcTarget> jztCollect = null;
 		 if(orgUser.equals("guangfa")){
 			 jztCollect = jstZcTargetService.queryJztList5(devNo);
@@ -95,30 +101,79 @@ public class QwertFcController extends JeecgController<QwertFc, IQwertFcService>
 			 	if(findflag){
 			 		break;
 				}
-				 String r2 = r1[i];
-				 if(r2!=null&&r2.indexOf("{")!=-1) {
-					 r2 = r2.substring(1, r2.length() - 1);
-				 }
-				 String[] r3 = r2.split(",");
+				String r2 = r1[i];
+				if(r2!=null&&r2.indexOf("{")!=-1) {
+				 r2 = r2.substring(1, r2.length() - 1);
+				}
+				String[] r3 = r2.split(",");
 				for(int j=0;j<r3.length;j++){
 					String[] r4 = r3[j].split("=");
 					if(r4[0].trim().equals(tc.getId().trim())){
-						JstZcTarget2 jzt2 = new JstZcTarget2();
-						jzt2.setId(r4[0]);
-						jzt2.setTargetNo(tc.getTargetNo());
-						jzt2.setTargetName(tc.getTargetName());
-						if(r4.length>1) {
-							String yinzi = tc.getYinzi();
-							if(yinzi!=null){
-								float value = Float.parseFloat(r4[1]) / Integer.parseInt(yinzi);
-								jzt2.setValue(value+"");
+						if(proType.toUpperCase().equals("MODBUS")&&tc.getInfoType().equals("digital")) {
+							List<JstZcTarget> jztc=null;
+							if(tc.getAddress().indexOf('.')!=-1){
+								String[] tas = tc.getAddress().split("\\.");
+								String ta = tas[0];
+								jztc = jztCollect.stream().filter(u -> ta.equals((u.getAddress().split("\\."))[0])).collect(Collectors.toList());
 							}else{
-								jzt2.setValue(r4[1]);
+								String ta = tc.getAddress();
+								jztc = jztCollect.stream().filter(u -> ta.equals(u.getAddress())).collect(Collectors.toList());
+							}
+
+							for(int n=0;n<jztc.size();n++){
+								JstZcTarget item = jztc.get(n);
+								JstZcTarget2 jzt2 = new JstZcTarget2();
+								jzt2.setId(item.getId());
+								jzt2.setTargetNo(item.getTargetNo());
+								jzt2.setTargetName(item.getTargetName());
+								String str1=r4[1];
+								if(str1.equals("true")) {
+									str1="1";
+								}
+								if(str1.equals("false")) {
+									str1="0";
+								}
+
+								String binaryStr = Integer.toBinaryString(Integer.parseInt(str1));
+								while(binaryStr.length() < 16){
+									binaryStr = "0"+binaryStr;
+								}
+								String a6=null;
+								if(item.getAddress().indexOf('.')==-1) {
+									String a1 = item.getInterceptBit();
+									String[] a2 = a1.split(",");
+									String[] a3 = a2[0].split(":");
+									int a4 = Integer.parseInt(a3[1]);
+									int a5 = 15 - a4;
+									a6 = binaryStr.substring(a5, a5 + 1);
+								}else{
+									String a1=item.getAddress();
+									String[] a2 = a1.split("\\.");
+									int a4 = Integer.parseInt(a2[1]);
+									int a5 = 15 - a4;
+									a6 = binaryStr.substring(a5, a5 + 1);
+								}
+								jzt2.setValue(a6);
+								jztList.add(jzt2);
 							}
 						}else{
-							jzt2.setValue("--");
+							JstZcTarget2 jzt2 = new JstZcTarget2();
+							jzt2.setId(r4[0]);
+							jzt2.setTargetNo(tc.getTargetNo());
+							jzt2.setTargetName(tc.getTargetName());
+							if (r4.length > 1) {
+								String yinzi = tc.getYinzi();
+								if (yinzi != null) {
+									float value = Float.parseFloat(r4[1]) / Integer.parseInt(yinzi);
+									jzt2.setValue(value + "");
+								} else {
+									jzt2.setValue(r4[1]);
+								}
+							} else {
+								jzt2.setValue("--");
+							}
+							jztList.add(jzt2);
 						}
-						jztList.add(jzt2);
 						findflag=true;
 						break;
 					}

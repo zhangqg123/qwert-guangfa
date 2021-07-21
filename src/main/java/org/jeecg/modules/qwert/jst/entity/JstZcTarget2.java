@@ -34,4 +34,5 @@ public class JstZcTarget2 implements Serializable {
     private java.lang.String yinzi;
     private java.lang.String instruct;
     private java.lang.String value;
+    private java.lang.String infoType;
 }

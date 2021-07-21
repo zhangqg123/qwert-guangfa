@@ -32,9 +32,9 @@ public class JstDevJob implements Job {
 	public void execute(JobExecutionContext jobExecutionContext) throws JobExecutionException {
 
 		log.info(String.format("welcome %s! Jeecg-Boot 带参数定时任务 SampleParamJob !   时间:" + DateUtils.now(), this.parameter));
-		JstConstant.debugflag=1;
-		long start, end;
-		start = System.currentTimeMillis();
+//		JstConstant.debugflag=1;
+//		long start, end;
+//		start = System.currentTimeMillis();
 		jstZcJobService.readDev(parameter);
 	}
 }

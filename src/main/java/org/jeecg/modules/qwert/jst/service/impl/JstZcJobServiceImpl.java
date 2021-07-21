@@ -120,6 +120,9 @@ public class JstZcJobServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
 			QueryWrapper<JstZcDev> queryWrapper = new QueryWrapper<JstZcDev>();
 			queryWrapper.eq("dev_no", devNo);
 			JstZcDev jzd = jstZcDevService.getOne(queryWrapper);
+			if(jzd==null) {
+				return;
+			}
 			String devName = jzd.getDevName();
 			String catNo = jzd.getDevCat();
 			String orgUser = jzd.getOrgUser();
@@ -195,11 +198,15 @@ public class JstZcJobServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
 				}
 				handleDbMq(resList, devNo);
 			}
-			end = System.currentTimeMillis();
-			System.out.println(devName+" 用时:" + (end - start) + "(ms)");
+			if(JstConstant.debugflag==1) {
+				end = System.currentTimeMillis();
+				System.out.println(devName + " 用时:" + (end - start) + "(ms)");
+			}
 		}
-		nend = System.currentTimeMillis();
-		System.out.println(devNos+" 开始时间:" + nstart + "; 结束时间:" + nend + "; 用时:" + (nend - nstart) + "(ms)");
+		if(JstConstant.debugflag==1) {
+			nend = System.currentTimeMillis();
+			System.out.println(devNos+" 开始时间:" + nstart + "; 结束时间:" + nend + "; 用时:" + (nend - nstart) + "(ms)");
+		}
 	}
 
 	private String handlekStar(List<JstZcTarget> jztList, List resList, JSONObject jsonConInfo) {
@@ -446,21 +453,25 @@ public class JstZcJobServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
 				}
 			}
 		}else{
-			redisUtil.set(rkey, rvalue);
-			if(keyValue!=null){
-				if(Float.parseFloat((String) rvalue)>jzt.getValMax()){
-					String tmpAlarmNo = jzt.getId() + ",";
-		//			String message = String.format(jzt.getHighInfo(),rvalue);
-					String message=jzt.getTargetName()+"过高,等于"+rvalue;
-					String tmpAlarmValue = jzt.getTargetName() + "-" + message + "-" + keyValue + "to" + rvalue + ",";
-					tmpAlarm=tmpAlarmNo+":::"+tmpAlarmValue;
-				}
-				if(Float.parseFloat((String) rvalue)<jzt.getValMin()){
-					String tmpAlarmNo = jzt.getId() + ",";
-	//				String message = String.format(jzt.getLowInfo(),rvalue);
-					String message=jzt.getTargetName()+"过低,等于"+rvalue;
-					String tmpAlarmValue = jzt.getTargetName() + "-" + message + "-" + keyValue + "to" + rvalue + ",";
-					tmpAlarm=tmpAlarmNo+":::"+tmpAlarmValue;
+			if(rvalue!=null&&!rvalue.equals("")) {
+				redisUtil.set(rkey, rvalue);
+				if(keyValue!=null){
+			//		System.out.println("rvalue::"+rvalue);
+
+					if(Float.parseFloat((String) rvalue)>jzt.getValMax()){
+						String tmpAlarmNo = jzt.getId() + ",";
+			//			String message = String.format(jzt.getHighInfo(),rvalue);
+						String message=jzt.getTargetName()+"过高,等于"+rvalue;
+						String tmpAlarmValue = jzt.getTargetName() + "-" + message + "-" + keyValue + "to" + rvalue + ",";
+						tmpAlarm=tmpAlarmNo+":::"+tmpAlarmValue;
+					}
+					if(Float.parseFloat((String) rvalue)<jzt.getValMin()){
+						String tmpAlarmNo = jzt.getId() + ",";
+		//				String message = String.format(jzt.getLowInfo(),rvalue);
+						String message=jzt.getTargetName()+"过低,等于"+rvalue;
+						String tmpAlarmValue = jzt.getTargetName() + "-" + message + "-" + keyValue + "to" + rvalue + ",";
+						tmpAlarm=tmpAlarmNo+":::"+tmpAlarmValue;
+					}
 				}
 			}
 		}
@@ -633,6 +644,10 @@ public class JstZcJobServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
 						ta=tas[0];
 					}
 					if(jzt.getAddressType()!=null && jzt.getAddressType().equals("HEX")){
+			//			System.out.println(jzt.getDevNo()+"::"+jzt.getTargetNo());
+						if(ta.length()>4) {
+							ta=ta.substring(0,4);
+						}
 						offset = Integer.parseInt(ta,16);
 					}else{
 						offset = Integer.parseInt(ta);
@@ -783,6 +798,9 @@ public class JstZcJobServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
 							jstZcAlarm.setDevName(devName);
 							jstZcAlarm.setCatNo(catNo);
 							jstZcAlarm.setTargetNo(alarmNo);
+							if(alarmValue.length()>1000) {
+								alarmValue=alarmValue.substring(0,1000);
+							}
 							jstZcAlarm.setAlarmValue(alarmValue);
 							jstZcAlarm.setSendTime(new Date());
 							jstZcAlarm.setSendType("2");
@@ -905,6 +923,7 @@ public class JstZcJobServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
 									String[] a2 = a1.split("\\.");
 									int a4 = Integer.parseInt(a2[1]);
 									int a5 = 15 - a4;
+				//					System.out.println(item.getTargetNo()+"::"+item.getTargetName()+"::binaryStr="+binaryStr+"::a5="+a5);
 									a6 = binaryStr.substring(a5, a5 + 1);
 								}
 								rkey = devNo + "::" + item.getTargetNo();

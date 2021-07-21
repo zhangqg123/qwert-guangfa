@@ -154,6 +154,63 @@ public class JztListController extends JeecgController<JstZcTarget, IJstZcTarget
 //		 System.out.println(aaa);
 		 return String.valueOf(sb);
 	 }
+	 @GetMapping(value = "/frontData")
+	 public Result<?> queryFrontData(HttpServletRequest req) {
+		 String devPos=req.getParameter("devPos");
+		 //	 String devPos = "gfp002";
+		 List<JstZcTarget2> jztCollect = jstZcTargetService.queryJztListFromPos(devPos);
+		 List<JstZcTarget2> retList = new ArrayList<JstZcTarget2>();
+//		 StringBuilder sb = new StringBuilder();
+//		 sb.append("{\"data\"");
+//		 sb.append(":[{");
+		 String tmpDevNo = null;
+		 String ret=null;
+		 for (int h = 0; h < jztCollect.size(); h++) {
+			 JstZcTarget2 jzt = jztCollect.get(h);
+
+			 if (tmpDevNo==null || !tmpDevNo.equals(jzt.getDevNo())) {
+				 ret = (String) redisUtil.get(jzt.getDevNo());
+			 }
+			 if (ret != null) {
+				 String[] r1 = ret.split(";");
+				 boolean findflag = false;
+				 for (int i = 0; i < r1.length; i++) {
+					 if (findflag) {
+						 break;
+					 }
+					 String r2 = r1[i];
+					 if (r2 != null && r2.indexOf("{") != -1) {
+						 r2 = r2.substring(1, r2.length() - 1);
+					 }
+					 String[] r3 = r2.split(",");
+					 for (int j = 0; j < r3.length; j++) {
+						 String[] r4 = r3[j].split("=");
+						 if (r4[0].trim().equals(jzt.getId().trim())) {
+							 String r5=null;
+							 if(jzt.getYinzi()!=null){
+								 r5=Float.parseFloat(r4[1])/Integer.parseInt(jzt.getYinzi())+"";
+							 }else{
+								 r5=r4[1].trim();
+							 }
+							 jzt.setValue(r5);
+							 retList.add(jzt);
+							 // targetNo 是否需要引号？
+				//			 sb.append(jzt.getTargetNo()+":"+jzt.getTargetName()+":"+r5+",");
+
+							 findflag = true;
+							 break;
+						 }
+					 }
+
+				 }
+			 }
+			 tmpDevNo = jzt.getDevNo();
+		 }
+		 //	 int aa = sb.length();
+		 //	 sb.substring(0, sb.length() - 2);
+//		 sb.append("}]}");
+		 return Result.ok(retList);
+	 }
 
  }
 
