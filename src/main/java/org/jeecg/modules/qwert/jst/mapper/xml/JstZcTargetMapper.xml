@@ -20,11 +20,11 @@
 		SELECT * FROM jst_zc_target where dev_type=#{dev_type} order by instruct,tmp
 	</select>
 	<select id="queryJztList4" parameterType="Object"  resultMap="JstZcTarget">
-		SELECT * FROM jst_zc_target where dev_type=#{dev_type} order by instruct,address
+		SELECT * FROM jst_zc_target where dev_type=#{dev_type} and if_get!="unuse" order by instruct,address
 	</select>
 	<select id="queryJztList5" parameterType="Object"  resultMap="JstZcTarget">
 <!--		select * from jst_zc_target where dev_type in (select origin_id from jst_zc_cat where org_user=#{orgUser}) -->
-		SELECT * FROM jst_zc_target where dev_no=#{dev_no} order by instruct,address
+		SELECT * FROM jst_zc_target where dev_no=#{dev_no} and if_get!="unuse" order by instruct,address
 	</select>
 	<select id="queryJztPageByOrgUser" parameterType="Object"  resultMap="JstZcTarget">
 			select * from jst_zc_target where dev_type in (select origin_id from jst_zc_cat where org_user=#{orgUser})
@@ -57,7 +57,8 @@
 		   where gc.dev_no is not null and gc.dev_no=#{dev_no}
 	</select>
 	<select id="queryJztListFromPos" parameterType="Object"  resultMap="JstZcTarget2">
-		select jzt.id,jzt.dev_type,jzt.dev_no,jzt.target_no,jzt.target_name,jzt.yinzi from jst_zc_target jzt
+		select jzt.id,jzt.dev_type,jzt.dev_no,jzd.mod_no,jzt.target_no,jzt.target_name,jzt.yinzi from jst_zc_target jzt
+			left join jst_zc_dev jzd on jzt.dev_no = jzd.dev_no
 			where jzt.target_no like "gf%" and jzt.dev_no in
 				(select dev_no from jst_zc_dev where dev_pos =#{dev_pos})
 			and jzt.display_mode=3 order by jzt.dev_no,jzt.target_no

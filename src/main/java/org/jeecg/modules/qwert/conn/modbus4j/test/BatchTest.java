@@ -11,8 +11,8 @@ import org.jeecg.modules.qwert.conn.modbus4j.source.locator.BaseLocator;
 public class BatchTest {
     public static void main(String[] args) throws Exception {
         IpParameters tcpParameters = new IpParameters();
-        tcpParameters.setHost("46.1.154.204");
-        tcpParameters.setPort(10001);
+        tcpParameters.setHost("127.0.0.1");
+        tcpParameters.setPort(502);
         tcpParameters.setEncapsulated(true);
 
         ModbusFactory modbusFactory = new ModbusFactory();
@@ -20,10 +20,10 @@ public class BatchTest {
 
         try {
             BatchRead<String> batchRead = new BatchRead<String>();
-            int slaveId = 1;
+            int slaveId = 11;
 /*
             batchRead.addLocator("00011 sb true", BaseLocator.coilStatus(slaveId, 10));
- 
+
             batchRead.addLocator("00012 sb false", BaseLocator.coilStatus(slaveId, 11));
             batchRead.addLocator("00013 sb true", BaseLocator.coilStatus(slaveId, 12));
             batchRead.addLocator("00014 sb true", BaseLocator.coilStatus(slaveId, 13));
@@ -51,8 +51,9 @@ public class BatchTest {
             batchRead.addLocator("40016-d sb false", BaseLocator.holdingRegisterBit(slaveId, 40016, 13));
             batchRead.addLocator("40016-e sb true", BaseLocator.holdingRegisterBit(slaveId, 40016, 14));
             batchRead.addLocator("40016-f sb false", BaseLocator.holdingRegisterBit(slaveId, 40016, 15));
-
-            batchRead.addLocator("30016-0 sb true", BaseLocator.inputRegisterBit(slaveId, 30016, 0));
+*/
+            batchRead.addLocator("30016-0 sb true", BaseLocator.inputRegisterBit(slaveId, 2, 2));
+/*
             batchRead.addLocator("30016-1 sb false", BaseLocator.inputRegisterBit(slaveId, 30016, 1));
             batchRead.addLocator("30016-2 sb false", BaseLocator.inputRegisterBit(slaveId, 30016, 2));
             batchRead.addLocator("30016-3 sb false", BaseLocator.inputRegisterBit(slaveId, 30016, 3));
@@ -69,7 +70,7 @@ public class BatchTest {
             batchRead.addLocator("30016-e sb false", BaseLocator.inputRegisterBit(slaveId, 30016, 14));
             batchRead.addLocator("30016-f sb true", BaseLocator.inputRegisterBit(slaveId, 30016, 15));
 */
-            
+/*
             batchRead.addLocator("1",
                     BaseLocator.holdingRegister(slaveId, 1, DataType.TWO_BYTE_INT_UNSIGNED));
             batchRead.addLocator("2",
@@ -85,9 +86,10 @@ public class BatchTest {
             batchRead.addLocator("0",
                     BaseLocator.holdingRegister(slaveId, 0, DataType.TWO_BYTE_INT_UNSIGNED));
 
-/*
+*/
             batchRead.addLocator("30017 sb -1968 tc",
-                    BaseLocator.inputRegister(slaveId, 30017, DataType.TWO_BYTE_INT_UNSIGNED));
+                    BaseLocator.inputRegister(slaveId, 1, DataType.TWO_BYTE_INT_UNSIGNED));
+/*
             batchRead.addLocator("30018 sb -123456789 tc",
                     BaseLocator.inputRegister(slaveId, 30018, DataType.FOUR_BYTE_INT_UNSIGNED));
             batchRead.addLocator("30020 sb -123456789 tc",
@@ -106,12 +108,14 @@ public class BatchTest {
             BatchResults<String> results = master.send(batchRead);
 
             System.out.println(results);
+/*
             System.out.println(results.getValue("d0"));
             System.out.println(results.getValue("d1"));
             System.out.println(results.getValue("d2"));
             System.out.println(results.getValue("d3"));
             System.out.println(results.getValue("d4"));
             System.out.println(results.getValue("d5"));
+*/
         }
         finally {
             master.destroy();

@@ -93,11 +93,8 @@ public class TestVoice {
 //		String s = "当月亮和太阳处于地球两侧，并且月亮和太阳的黄经相差180度时，从地球上看，此时的月亮最圆，称之为“满月”，亦称为“望”。农历每月的十四、十五、十六甚至十七，都是满月可能出现的时段。而“超级月亮”指的就是月亮在满月的时候，刚好位于近地点附近。由于靠近地球，所以看上去，此时的月亮比平时更大。“超级月亮”每年都会发生，有时还不止一次。";
 //		String s="报警值=123";
 //		textToSpeech(s);
-		String retMessage="0;499;1;2190;;01783;023";
-		String rm2="DtSplt(7,0,;,0)";
-	//	String rm2="DtSplt(7,0,\";\",0)=0";
-		String rs = retString(retMessage, rm2);
-		System.out.println(rs);
+		int slaveId = Integer.parseInt("A",16);
+		System.out.println(slaveId);
 	}
 
 }

@@ -21,6 +21,8 @@ import org.jeecg.modules.qwert.conn.modbus4j.source.exception.ModbusInitExceptio
 import org.jeecg.modules.qwert.conn.modbus4j.source.exception.ModbusTransportException;
 import org.jeecg.modules.qwert.conn.modbus4j.source.ip.IpParameters;
 import org.jeecg.modules.qwert.conn.modbus4j.source.locator.BaseLocator;
+import org.jeecg.modules.qwert.conn.modbus4j.source.msg.ReadInputRegistersRequest;
+import org.jeecg.modules.qwert.conn.modbus4j.source.msg.ReadInputRegistersResponse;
 import org.jeecg.modules.qwert.conn.modbus4j.test.TestSerialPortWrapper;
 import org.jeecg.modules.qwert.conn.qudong.QwertMaster;
 import org.jeecg.modules.qwert.conn.qudong.base.QudongUtils;
@@ -374,7 +376,7 @@ public class JstZcJobServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
 	}
 
 	private String handleM7000d(JSONObject jsonConInfo, List resList, List<JstZcTarget> jztCollect) {
-		int slaveId = Integer.parseInt(jsonConInfo.getString("slave"));
+		int slaveId = Integer.parseInt(jsonConInfo.getString("slave"),16);
 		QwertMaster master = QudongUtils.getQwertMaster(jsonConInfo);
 		String tmpInstruct=null;
 		String retmessage=null;
@@ -388,6 +390,9 @@ public class JstZcJobServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
 			if(instruct.equals(tmpInstruct)){
 				String rm1 = jzt.getTargetNo();
 				String rm2 = jzt.getAddress();
+				if(retmessage==null) {
+					return null;
+				}
 				String rm = QudongUtils.getM7000DString(retmessage, rm2);
 				tmpAlarm=getAlarm(jzt, devNo, rm);
 				if(tmpAlarm!=null) {
@@ -427,6 +432,7 @@ public class JstZcJobServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
 			}
 			catch (QudongTransportException e) {
 				e.printStackTrace();
+				return null;
 			}
 			tmpInstruct = jzt.getInstruct();
 		}
@@ -621,7 +627,7 @@ public class JstZcJobServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
 		try {
 			master.init();
 			int slaveId = 0;
-			slaveId = Integer.parseInt(slave);
+			slaveId = Integer.parseInt(slave,16);
 			BatchRead<String> batch = new BatchRead<String>();
 			String targetNos="";
 			String tmpInstruct = null;
@@ -705,9 +711,25 @@ public class JstZcJobServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
 
 					if (di.equals("04")) {
 						targetNos=targetNos+jzt.getId()+",";
-						batch.addLocator(jzt.getId(), BaseLocator.inputRegister(slaveId, offset,
-								Integer.parseInt(dataType)));
-						batchSend = true;
+//						batch.addLocator(jzt.getId(), BaseLocator.inputRegister(slaveId, offset,
+//								Integer.parseInt(dataType)));
+//						batchSend = true;
+						if(catNo.trim().equals("D86")){
+							ReadInputRegistersRequest request = new ReadInputRegistersRequest(slaveId, offset, 2);
+							ReadInputRegistersResponse response = (ReadInputRegistersResponse) master.send(request);
+							if (response.isException()){
+								System.out.println("Exception response: message=" + response.getExceptionMessage());
+							}else{
+								short[] retMessage = response.getShortData();
+								String rm1 = jzt.getId();
+								//					resList.add(rm1+"="+retMessage[0]);
+								resList.add("{"+rm1+"="+retMessage[0]+"}");
+							}
+						}else{
+							batch.addLocator(jzt.getId(),
+									BaseLocator.inputRegister(slaveId, offset, Integer.parseInt(dataType)));
+							batchSend = true;
+						}
 					}
 					if (di.equals("03")) {
 						targetNos=targetNos+jzt.getId()+",";
@@ -1015,18 +1037,18 @@ public class JstZcJobServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
 							String flag = null;
 							String message=null;
 							int r5=0;
-							if (r4 > jzt.getValMax()) {
+							if (r4 >= jzt.getValMax()) {
 								flag = "1";
 								message=jzt.getTargetName()+"过高,等于"+r4;
 							}
-							if (r4 < jzt.getValMin()) {
+							if (r4 <= jzt.getValMin()) {
 								flag = "1";
 								message=jzt.getTargetName()+"过低,等于"+r4;
 							}
 							if (r4 > jzt.getValMin() && r4 < jzt.getValMax()) {
 								flag = "0";
 							}
-							if (keyValue == null || !flag.equals(keyValue)) {
+							if (flag!=null && (keyValue == null || !flag.equals(keyValue))) {
 								redisUtil.set(rkey, flag);
 								alarmNo += jzt.getId() + ",";
 								alarmValue += jzt.getTargetName() +"-"+message+ "-报警值-" + r4 + "-" + keyValue + "to" + flag+",";

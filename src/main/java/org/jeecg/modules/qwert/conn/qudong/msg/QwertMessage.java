@@ -71,7 +71,9 @@ abstract public class QwertMessage {
 
 //        QwertUtils.pushByte(queue, Integer.valueOf(tmp[0]));
 //        QwertUtils.pushByte(queue, Integer.valueOf(tmp[1]));
-        if((""+slaveId).length()==1) {
+
+        String hex= Integer.toHexString(slaveId);
+        if(hex.length()==1) {
             QwertUtils.pushByte(queue, 0);
             QwertUtils.pushByte(queue, slaveId);
         }else {

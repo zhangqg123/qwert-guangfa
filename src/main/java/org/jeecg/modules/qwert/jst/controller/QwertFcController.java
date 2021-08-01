@@ -97,6 +97,10 @@ public class QwertFcController extends JeecgController<QwertFc, IQwertFcService>
 		 for(int h=0;h<jztCollect.size();h++){
 			 boolean findflag = false;
 			 JstZcTarget tc = jztCollect.get(h);
+
+//			 if(tc.getDisplayMode()==0){
+//			 	continue;
+//			 }
 			 for(int i=0;i<r1.length;i++){
 			 	if(findflag){
 			 		break;
@@ -109,7 +113,7 @@ public class QwertFcController extends JeecgController<QwertFc, IQwertFcService>
 				for(int j=0;j<r3.length;j++){
 					String[] r4 = r3[j].split("=");
 					if(r4[0].trim().equals(tc.getId().trim())){
-						if(proType.toUpperCase().equals("MODBUS")&&tc.getInfoType().equals("digital")) {
+						if(proType.toUpperCase().equals("MODBUS")&&tc.getInfoType().equals("digital") && tc.getAddress().indexOf(".")!=-1) {
 							List<JstZcTarget> jztc=null;
 							if(tc.getAddress().indexOf('.')!=-1){
 								String[] tas = tc.getAddress().split("\\.");
@@ -126,6 +130,7 @@ public class QwertFcController extends JeecgController<QwertFc, IQwertFcService>
 								jzt2.setId(item.getId());
 								jzt2.setTargetNo(item.getTargetNo());
 								jzt2.setTargetName(item.getTargetName());
+								jzt2.setDisplayMode(tc.getDisplayMode());
 								String str1=r4[1];
 								if(str1.equals("true")) {
 									str1="1";
@@ -139,7 +144,7 @@ public class QwertFcController extends JeecgController<QwertFc, IQwertFcService>
 									binaryStr = "0"+binaryStr;
 								}
 								String a6=null;
-								if(item.getAddress().indexOf('.')==-1) {
+								if(orgUser.equals("jinshitan") && item.getAddress().indexOf('.')==-1) {
 									String a1 = item.getInterceptBit();
 									String[] a2 = a1.split(",");
 									String[] a3 = a2[0].split(":");
@@ -147,6 +152,9 @@ public class QwertFcController extends JeecgController<QwertFc, IQwertFcService>
 									int a5 = 15 - a4;
 									a6 = binaryStr.substring(a5, a5 + 1);
 								}else{
+									if(item.getAddress().indexOf('.')==-1){
+										int aa = 1;
+									}
 									String a1=item.getAddress();
 									String[] a2 = a1.split("\\.");
 									int a4 = Integer.parseInt(a2[1]);
@@ -161,6 +169,7 @@ public class QwertFcController extends JeecgController<QwertFc, IQwertFcService>
 							jzt2.setId(r4[0]);
 							jzt2.setTargetNo(tc.getTargetNo());
 							jzt2.setTargetName(tc.getTargetName());
+							jzt2.setDisplayMode(tc.getDisplayMode());
 							if (r4.length > 1) {
 								String yinzi = tc.getYinzi();
 								if (yinzi != null) {

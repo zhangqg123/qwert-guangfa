@@ -22,6 +22,8 @@ import org.fusesource.stomp.jms.StompJmsDestination;
 import org.jeecg.common.api.vo.Result;
 import org.jeecg.common.system.query.QueryGenerator;
 import org.jeecg.common.util.DateUtils;
+import org.jeecg.modules.qwert.conn.modbus4j.source.msg.ReadInputRegistersRequest;
+import org.jeecg.modules.qwert.conn.modbus4j.source.msg.ReadInputRegistersResponse;
 import org.jeecg.modules.qwert.conn.modbus4j.test.TestSerialPortWrapper;
 import org.jeecg.modules.qwert.conn.qudong.QwertFactory;
 import org.jeecg.modules.qwert.conn.qudong.QwertMaster;
@@ -166,6 +168,14 @@ public class JstZcDevController extends JeecgController<JstZcDev, IJstZcDevServi
 		start = System.currentTimeMillis();
 
 		String devNo=jstZcRev.getDevNo();
+		QueryWrapper<JstZcDev> queryWrapper = new QueryWrapper<JstZcDev>();
+		queryWrapper.eq("dev_no", devNo);
+		JstZcDev jzd = jstZcDevService.getOne(queryWrapper);
+		if(jzd==null) {
+			return null;
+		}
+//		String devName = jzd.getDevName();
+		String catNo = jzd.getDevCat();
 		String conInfo = jstZcRev.getConnInfo();
 		String revList = jstZcRev.getRevList();
 		List<JstZcTarget> jztList = null;
@@ -185,7 +195,7 @@ public class JstZcDevController extends JeecgController<JstZcDev, IJstZcDevServi
 		BatchResults<String> results = null;
 //		if (type.equals("SOCKET")||type.equals("MODBUSRTU")||type.equals("MODBUSASCII")||type.equals("MODBUSTCP")) {
 		if (proType.toUpperCase().equals("MODBUS")) {
-			handleModbus(type,devNo, jztList, resList, jsonConInfo);
+			handleModbus(type,devNo,catNo, jztList, resList, jsonConInfo);
 		}
 		if (proType.toUpperCase().equals("SNMP")) {
 			handleSnmp(jztList, resList, jsonConInfo);
@@ -261,7 +271,7 @@ public class JstZcDevController extends JeecgController<JstZcDev, IJstZcDevServi
 	}
 
 	private void handleM7000D(List<JstZcTarget> jztList, List resList, JSONObject jsonConInfo) {
-		int slaveId = Integer.parseInt(jsonConInfo.getString("slave"));
+		int slaveId = Integer.parseInt(jsonConInfo.getString("slave"),16);
 		QwertMaster master = QudongUtils.getQwertMaster(jsonConInfo);
 		String tmpInstruct=null;
 		String retmessage=null;
@@ -276,6 +286,7 @@ public class JstZcDevController extends JeecgController<JstZcDev, IJstZcDevServi
 				continue;
 			}
 			try {
+
 				ReadM7000Request request = new ReadM7000Request(slaveId, 6);
 				ReadM7000Response response = (ReadM7000Response) master.send(request);
 
@@ -441,7 +452,7 @@ public class JstZcDevController extends JeecgController<JstZcDev, IJstZcDevServi
 		}
 	}
 
-	public void handleModbus(String type,String devNo, List<JstZcTarget> jztList, List resList, JSONObject jsonConInfo)
+	public void handleModbus(String type,String devNo,String catNo, List<JstZcTarget> jztList, List resList, JSONObject jsonConInfo)
 			throws InterruptedException {
 		String slave;
 		String packageBit;
@@ -500,7 +511,7 @@ public class JstZcDevController extends JeecgController<JstZcDev, IJstZcDevServi
 		try {
 			master.init();
 			int slaveId = 0;
-			slaveId = Integer.parseInt(slave);
+			slaveId = Integer.parseInt(slave,16);
 			BatchRead<String> batch = new BatchRead<String>();
 			String tmpInstruct = null;
 			int pointNumber = 0;
@@ -554,9 +565,22 @@ public class JstZcDevController extends JeecgController<JstZcDev, IJstZcDevServi
 					dataType=jzt.getDataType();
 				}
 				if (di.equals("04")) {
+					if(catNo.trim().equals("D86")){
+						ReadInputRegistersRequest request = new ReadInputRegistersRequest(slaveId, offset, 2);
+						ReadInputRegistersResponse response = (ReadInputRegistersResponse) master.send(request);
+						if (response.isException()){
+							System.out.println("Exception response: message=" + response.getExceptionMessage());
+						}else{
+							short[] retMessage = response.getShortData();
+							String rm1 = jzt.getId();
+		//					resList.add(rm1+"="+retMessage[0]);
+							resList.add("{"+rm1+"="+retMessage[0]+"}");
+						}
+					}else{
 						batch.addLocator(jzt.getId(),
 								BaseLocator.inputRegister(slaveId, offset, Integer.parseInt(dataType)));
 						batchSend = true;
+					}
 				}
 				if (di.equals("03")) {
 						batch.addLocator(jzt.getId(),
@@ -580,7 +604,7 @@ public class JstZcDevController extends JeecgController<JstZcDev, IJstZcDevServi
 			}
 			if(JstConstant.debugflag==1) {
 				System.out.println(devNo+"::"+resList.size());
-			}				
+			}
 		} catch (ModbusInitException e) {
 			e.printStackTrace();
 		} catch (ModbusTransportException e) {

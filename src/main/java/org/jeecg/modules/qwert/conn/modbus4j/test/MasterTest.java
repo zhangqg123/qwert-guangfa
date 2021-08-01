@@ -53,14 +53,15 @@ public class MasterTest {
 
         ModbusFactory modbusFactory = new ModbusFactory();
 
-        ModbusMaster master = modbusFactory.createRtuMaster(wrapper);
+   //     ModbusMaster master = modbusFactory.createRtuMaster(wrapper);
         // ModbusMaster master = modbusFactory.createAsciiMaster(wrapper);
-  //      ModbusMaster master = modbusFactory.createTcpMaster(ipParameters, false);
+        ModbusMaster master = modbusFactory.createTcpMaster(ipParameters, false);
         // ModbusMaster master = modbusFactory.createUdpMaster(ipParameters);
 
         try {
             master.init();
-            int slaveId = 1;
+            String sid="0B";
+            int slaveId = Integer.parseInt(sid,16);
 
           //  readCoilTest(master, slaveId, 98, 200);
             // readCoilTest(master, slaveId, 99, 200);
@@ -68,7 +69,7 @@ public class MasterTest {
             // readDiscreteInputTest(master, slaveId, 449, 72);
             // readHoldingRegistersTest(master, slaveId, 9, 125);
             // readHoldingRegistersTest(master, slaveId, 9, 120);
-            readInputRegistersTest(master, slaveId, 2, 1);
+  //          readInputRegistersTest(master, slaveId, 2, 1);
             // readInputRegistersTest(master, slaveId, 14, 8);
             // writeCoilTest(master, slaveId, 1, true);
             // writeCoilTest(master, slaveId, 110, true);
@@ -86,9 +87,9 @@ public class MasterTest {
             // readCoilTest(master, slaveId, 10, 5);
             // readDiscreteInputTest(master, slaveId, 10, 6);
             // readDiscreteInputTest(master, slaveId, 10, 5);
-   //         readHoldingRegistersTest(master, slaveId, 22, 2);
+     //       readHoldingRegistersTest(master, slaveId, 0, 2);
            //  readHoldingRegistersTest(master, slaveId, 3037, 2);
-    //         readInputRegistersTest(master, slaveId, 2340, 2);
+             readInputRegistersTest(master, slaveId, 2, 2);
             // readInputRegistersTest(master, slaveId, 0, 5);
             // writeCoilTest(master, slaveId, 8, true);
             // writeCoilTest(master, slaveId, 11, true);
