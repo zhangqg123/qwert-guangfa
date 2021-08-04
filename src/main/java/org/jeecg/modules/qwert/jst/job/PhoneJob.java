@@ -44,7 +44,7 @@ public class PhoneJob implements Job {
 		String alarmMessage="2KT8,过滤网堵报警开关,,";
 
 	//	int sret = TestDll1.INSTANCE.SendSms(4, 115200,"15699582810", str);
-		int sret = TestDll1.INSTANCE.Dial(phones, alarmMessage);
+		int sret = TestDll1.INSTANCE.Dial(phones, alarmMessage,"9,");
 
 		System.out.println("sret=" + sret);
 

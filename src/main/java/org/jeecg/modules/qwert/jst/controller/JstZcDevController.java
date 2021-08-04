@@ -252,9 +252,11 @@ public class JstZcDevController extends JeecgController<JstZcDev, IJstZcDevServi
 					String rm2 = jzt.getAddress();
 					int rm = 0;
 					if(rm2.indexOf("_")!=-1){
-						String[] rm3=rm2.split("_");
-						byte trm = retmessage[Integer.parseInt(rm3[0])] ;
-						rm=trm & 0xff;
+						short[] rp = response.getShortData();
+				//		String[] rm3=rm2.split("_");
+				//		byte trm = retmessage[Integer.parseInt(rm3[0])] ;
+				//		rm=trm & 0xff;
+						rm=rp[7];
 					}
 					if(rm2.indexOf("$")!=-1){
 						String[] rm3=rm2.split("\\$");
@@ -434,22 +436,68 @@ public class JstZcDevController extends JeecgController<JstZcDev, IJstZcDevServi
 		version = jsonConInfo.getString("version");
 		timeOut = jsonConInfo.getString("timeOut");
 		community = jsonConInfo.getString("community");
+		if(community==null){
+			community="public";
+		}
 		jztList.stream().sorted(Comparator.comparing(JstZcTarget::getInstruct));
 		List<String> oidList = new ArrayList<String>();
+		String tmpInstruct=null;
+		String retmessage=null;
 		for (int i = 0; i < jztList.size(); i++) {
 			JstZcTarget jzt = jztList.get(i);
 			String oidval = jzt.getInstruct();
-//			System.out.println(devNo+"::");
-			List snmpList = SnmpData.snmpGet(ipAddress, community, oidval,null);
-			if(snmpList.size()>0) {
-				for(int j=0;j<snmpList.size();j++) {
-					resList.add(snmpList.get(j));
-				}
+			String rm1 = jzt.getTargetNo();
+			String rm2 = jzt.getAddress();
+
+			if(oidval.equals(tmpInstruct)){
+				if(rm2!=null && jzt.getInfoType().equals("digital")){
+					String rm = snmpString(retmessage, rm2);
+					resList.add(rm1+"="+rm);
+				};
+				continue;
 			}
-	//		else {
-	//			break;
-	//		}
+			List snmpList = SnmpData.snmpGet(ipAddress, community, oidval,null);
+
+			if(snmpList.size()>0) {
+				String tmpRet = (String) snmpList.get(0);
+				String rm=null;
+				if(tmpRet!=null&&!tmpRet.equals("")){
+					retmessage = tmpRet.split("=")[1];
+				}
+				if(rm2==null||rm2.equals("")){
+					resList.add(rm1+"="+retmessage);
+				}else{
+					if(jzt.getInfoType().equals("digital")){
+						rm = snmpString(retmessage, rm2);
+						resList.add(rm1+"="+rm);
+					}
+				}
+
+//				for(int j=0;j<snmpList.size();j++) {
+//					resList.add(snmpList.get(j));
+//				}
+			}
+			tmpInstruct=jzt.getInstruct();
 		}
+	}
+
+	@Nullable
+	private String snmpString(String retmessage, String rm2) {
+		String rm = null;
+		retmessage=retmessage.trim();
+		if(rm2.indexOf("$")!=-1) {
+			String[] rm3 = rm2.split("\\$");
+			int rm4 = Integer.parseInt(rm3[0]);
+			rm = retmessage.substring(rm4, rm4+1);
+		}else{
+			String binaryStr = Integer.toBinaryString(Integer.valueOf(retmessage.trim()));
+			while(binaryStr.length() < 16){
+				binaryStr = "0"+binaryStr;
+			}
+			int pos = 15 - Integer.valueOf(rm2);
+			rm = binaryStr.substring(pos,pos+1);
+		}
+		return rm;
 	}
 
 	public void handleModbus(String type,String devNo,String catNo, List<JstZcTarget> jztList, List resList, JSONObject jsonConInfo)

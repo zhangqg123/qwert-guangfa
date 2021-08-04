@@ -159,7 +159,7 @@ public class JstZcJobServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
 				dbflag=true;
 			}
 			if (proType.toUpperCase().equals("PMBUS")) {
-				handlePmbus(jztCollect, resList, jsonConInfo);
+				alarm=handlePmbus(jztCollect, resList, jsonConInfo);
 				alarmflag=true;
 				dbflag=true;
 			}
@@ -180,7 +180,8 @@ public class JstZcJobServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
 			}
 
 			if (proType.toUpperCase().equals("SNMP")) {
-				handleSnmp(type, resList, devNo, devName, catNo, jsonConInfo, jztCollect);
+				alarm=handleSnmp(type, resList, devNo, devName, catNo, jsonConInfo, jztCollect);
+				alarmflag=true;
 				dbflag=true;
 			}
 			if(dbflag||alarmflag) {
@@ -262,10 +263,14 @@ public class JstZcJobServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
 			}
 			tmpInstruct = jzt.getInstruct();
 		}
-		return alarmNo+"::"+alarmValue;
+		String retAlarm=null;
+		if(alarmNo!=null&&alarmValue!=null){
+			retAlarm=alarmNo+"::"+alarmValue;
+		}
+		return retAlarm;
 	}
 
-	private void handlePmbus(List<JstZcTarget> jztList, List resList, JSONObject jsonConInfo) {
+	private String handlePmbus(List<JstZcTarget> jztList, List resList, JSONObject jsonConInfo) {
 		int slaveId = Integer.parseInt(jsonConInfo.getString("slave"));
 		QwertMaster master = QudongUtils.getQwertMaster(jsonConInfo);
 		String tmpInstruct=null;
@@ -303,7 +308,17 @@ public class JstZcJobServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
 					retmessage =  response.getRetData();
 					String rm1 = jzt.getTargetNo();
 					String rm2 = jzt.getAddress();
-					String rm = QudongUtils.getPmBus(retmessage, rm2);
+					String rm=null;
+			//		String rm = QudongUtils.getPmBus(retmessage, rm2);
+					
+					if(rm2.indexOf("_")!=-1){
+						short[] rp = response.getShortData();
+						rm=rp[7]+"";
+					}
+					if(rm2.indexOf("$")!=-1){
+						String[] rm3=rm2.split("\\$");
+						rm=retmessage[Integer.parseInt(rm3[0])-1]+"";
+					}
 					tmpAlarm=getAlarm(jzt, devNo, rm);
 					if(tmpAlarm!=null) {
 						String[] ta = tmpAlarm.split(":::");
@@ -318,6 +333,11 @@ public class JstZcJobServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
 			}
 			tmpInstruct = jzt.getInstruct();
 		}
+		String retAlarm=null;
+		if(alarmNo!=null&&alarmValue!=null){
+			retAlarm=alarmNo+"::"+alarmValue;
+		}
+		return retAlarm;
 	}
 
 
@@ -372,7 +392,11 @@ public class JstZcJobServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
 			}
 			tmpInstruct = jzt.getInstruct();
 		}
-		return alarmNo+"::"+alarmValue;
+		String retAlarm=null;
+		if(alarmNo!=null&&alarmValue!=null){
+			retAlarm=alarmNo+"::"+alarmValue;
+		}
+		return retAlarm;
 	}
 
 	private String handleM7000d(JSONObject jsonConInfo, List resList, List<JstZcTarget> jztCollect) {
@@ -436,7 +460,11 @@ public class JstZcJobServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
 			}
 			tmpInstruct = jzt.getInstruct();
 		}
-		return alarmNo+"::"+alarmValue;
+		String retAlarm=null;
+		if(alarmNo!=null&&alarmValue!=null){
+			retAlarm=alarmNo+"::"+alarmValue;
+		}
+		return retAlarm;
 	}
 
 	private String getAlarm(JstZcTarget jzt, String devNo, String rm) {
@@ -485,80 +513,142 @@ public class JstZcJobServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
 	}
 
 
-	private void handleSnmp(String type,List resList,String devNo, String devName, String catNo, JSONObject jsonConInfo, List<JstZcTarget> jztCollect)  {
+	private String handleSnmp(String type,List resList,String devNo, String devName, String catNo, JSONObject jsonConInfo, List<JstZcTarget> jztCollect)  {
 		String ipAddress = jsonConInfo.getString("ipAddress");
 		String version = jsonConInfo.getString("version");
 		String timeOut = jsonConInfo.getString("timeOut");
 		String community = jsonConInfo.getString("community");
+		if(community==null||community.equals("")) {
+			community="public";
+		}
 		jztCollect.stream().sorted(Comparator.comparing(JstZcTarget::getInstruct));
 		List<String> oidList = new ArrayList<String>();
-		//		System.out.println(devNo+"::");
+		String tmpInstruct=null;
+		String retmessage=null;
+		String alarmNo=null;
+		String alarmValue=null;
 		for (int j = 0; j < jztCollect.size(); j++) {
 			JstZcTarget jzt = jztCollect.get(j);
 			String oidval = jzt.getInstruct();
+			String rm1 = jzt.getTargetNo();
+			String rm2 = jzt.getAddress();
+			String tmpAlarm=null;
+
+			if(oidval.equals(tmpInstruct)){
+				if(rm2!=null && jzt.getInfoType().equals("digital")){
+					String rm = snmpString(retmessage, rm2);
+					tmpAlarm=getAlarm(jzt, devNo, rm);
+					if(tmpAlarm!=null){
+						String[] ta = tmpAlarm.split(":::");
+						alarmNo+=ta[0];
+						alarmValue+=ta[1];
+					}
+					resList.add(rm1+"="+rm);
+				};
+				continue;
+			}
 			List snmpList = null ;
 			snmpList = SnmpData.snmpGet(ipAddress, community, oidval,null);
 			if(snmpList.size()>0) {
-				for(int n=0;n<snmpList.size();n++) {
-					if(catNo.equals("MicroHtm")) {
-						String tmpSnmp=(String) snmpList.get(n);
-						if(tmpSnmp!=null) {
-						//	tmpSnmp=tmpSnmp.replaceAll(" ", "");
-							String[] tmps = tmpSnmp.split("=");
-							String t1 = tmps[1].replaceAll(" ", "");
-		//					if(t1.equals("Null")) {
-		//						System.out.println("Null");
-		//					}
-							if(t1!=null&&!t1.equals("Null")) {
-								if(Float.parseFloat(t1)>35||Float.parseFloat(t1)<10) {
-									List<JstZcAlarm> jzaList = jstZcAlarmService.queryJzaList("2");
-									int dealflag=0; //初始状态
-									for(int ai=0;ai<jzaList.size();ai++) {
-										JstZcAlarm jza = jzaList.get(ai);
-										if(jza.getDevNo().equals(devNo)&&jza.getTargetNo().equals(jzt.getTargetNo())) {
-											if(jza.getDealType()=="1") {  //已处理
-												JstZcAlarm jstZcAlarm = new JstZcAlarm();
-												jstZcAlarm.setDevNo(devNo);
-												jstZcAlarm.setDevName(devName);
-												jstZcAlarm.setCatNo(catNo);
-												jstZcAlarm.setTargetNo(jzt.getTargetNo());
-												jstZcAlarm.setAlarmValue(jzt.getTargetName());
-												jstZcAlarm.setSendTime(new Date());
-												jstZcAlarm.setSendType("2");
-												jstZcAlarmService.saveSys(jstZcAlarm);
-												dealflag=2; //已处理
-										//		break;
-											}else {
-												dealflag=1; //未处理
-												jza.setSendTime(new Date());
-												jstZcAlarmService.updateSys(jza);
-											}
-											break;
+				String tmpRet = (String) snmpList.get(0);
+				String rm=null;
+				if(tmpRet!=null&&!tmpRet.equals("")){
+					retmessage = tmpRet.split("=")[1];
+				}
+				if(rm2==null||rm2.equals("")){
+					resList.add(rm1+"="+retmessage);
+				}else{
+					if(jzt.getInfoType().equals("digital")){
+						rm = snmpString(retmessage, rm2);
+						tmpAlarm=getAlarm(jzt, devNo, rm);
+						if(tmpAlarm!=null){
+							String[] ta = tmpAlarm.split(":::");
+							alarmNo+=ta[0];
+							alarmValue+=ta[1];
+						}
+						resList.add(rm1+"="+rm);
+					}
+				}
+
+				if(catNo.equals("MicroHtm")) {
+					String tmpSnmp=(String) snmpList.get(0);
+					if(tmpSnmp!=null) {
+					//	tmpSnmp=tmpSnmp.replaceAll(" ", "");
+						String[] tmps = tmpSnmp.split("=");
+						String t1 = tmps[1].replaceAll(" ", "");
+	//					if(t1.equals("Null")) {
+	//						System.out.println("Null");
+	//					}
+						if(t1!=null&&!t1.equals("Null")) {
+							if(Float.parseFloat(t1)>35||Float.parseFloat(t1)<10) {
+								List<JstZcAlarm> jzaList = jstZcAlarmService.queryJzaList("2");
+								int dealflag=0; //初始状态
+								for(int ai=0;ai<jzaList.size();ai++) {
+									JstZcAlarm jza = jzaList.get(ai);
+									if(jza.getDevNo().equals(devNo)&&jza.getTargetNo().equals(jzt.getTargetNo())) {
+										if(jza.getDealType()=="1") {  //已处理
+											JstZcAlarm jstZcAlarm = new JstZcAlarm();
+											jstZcAlarm.setDevNo(devNo);
+											jstZcAlarm.setDevName(devName);
+											jstZcAlarm.setCatNo(catNo);
+											jstZcAlarm.setTargetNo(jzt.getTargetNo());
+											jstZcAlarm.setAlarmValue(jzt.getTargetName());
+											jstZcAlarm.setSendTime(new Date());
+											jstZcAlarm.setSendType("2");
+											jstZcAlarmService.saveSys(jstZcAlarm);
+											dealflag=2; //已处理
+									//		break;
+										}else {
+											dealflag=1; //未处理
+											jza.setSendTime(new Date());
+											jstZcAlarmService.updateSys(jza);
 										}
+										break;
 									}
-									if(dealflag==0 || dealflag==2) {
-										JstZcAlarm jstZcAlarm = new JstZcAlarm();
-										jstZcAlarm.setDevNo(devNo);
-										jstZcAlarm.setDevName(devName);
-										jstZcAlarm.setCatNo(catNo);
-										jstZcAlarm.setTargetNo(jzt.getTargetNo());
-										jstZcAlarm.setAlarmValue(jzt.getTargetName());
-										jstZcAlarm.setSendTime(new Date());
-										jstZcAlarm.setSendType("2");
-										jstZcAlarmService.saveSys(jstZcAlarm);
-									}
+								}
+								if(dealflag==0 || dealflag==2) {
+									JstZcAlarm jstZcAlarm = new JstZcAlarm();
+									jstZcAlarm.setDevNo(devNo);
+									jstZcAlarm.setDevName(devName);
+									jstZcAlarm.setCatNo(catNo);
+									jstZcAlarm.setTargetNo(jzt.getTargetNo());
+									jstZcAlarm.setAlarmValue(jzt.getTargetName());
+									jstZcAlarm.setSendTime(new Date());
+									jstZcAlarm.setSendType("2");
+									jstZcAlarmService.saveSys(jstZcAlarm);
 								}
 							}
 						}
-//								System.out.println(snmpList.get(n));
 					}
-					resList.add(snmpList.get(n));
+//								System.out.println(snmpList.get(n));
 				}
-			}else {
-				break;
 			}
+			tmpInstruct=jzt.getInstruct();
 //			handleDbMq(type, resList, devNo);
 		}
+		String retAlarm=null;
+		if(alarmNo!=null&&alarmValue!=null){
+			retAlarm=alarmNo+"::"+alarmValue;
+		}
+		return retAlarm;
+	}
+	
+	private String snmpString(String retmessage, String rm2) {
+		String rm = null;
+		retmessage=retmessage.trim();
+		if(rm2.indexOf("$")!=-1) {
+			String[] rm3 = rm2.split("\\$");
+			int rm4 = Integer.parseInt(rm3[0]);
+			rm = retmessage.substring(rm4, rm4+1);
+		}else{
+			String binaryStr = Integer.toBinaryString(Integer.valueOf(retmessage.trim()));
+			while(binaryStr.length() < 16){
+				binaryStr = "0"+binaryStr;
+			}
+			int pos = 15 - Integer.valueOf(rm2);
+			rm = binaryStr.substring(pos,pos+1);
+		}
+		return rm;
 	}
 
 	private void handleDbMq(List resList, String devNo) {
@@ -1121,7 +1211,7 @@ public class JstZcJobServiceImpl extends ServiceImpl<JstZcDevMapper, JstZcDev> i
 			System.setProperty("jna.encoding", "GBK");
 			String phones="13898480908";
 			String alarmMessage="2KT8,过滤网堵报警开关,,";
-			int sret = TestDll1.INSTANCE.Dial(phones, alarmMessage);
+			int sret = TestDll1.INSTANCE.Dial(phones, alarmMessage,"9,");
 			System.out.println("sret=" + sret);
 		}
 	}
